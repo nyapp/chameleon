@@ -37,6 +37,7 @@ class GameEngine {
     
     // UI Animations
     this.screenShake = 0;
+    this.gameOverShakeFrames = 0; // GAMEOVER 時の画面揺れ（60fps で 1 秒）
     this.levelUpBannerFrames = 0;
     
     // Inputs
@@ -410,6 +411,8 @@ class GameEngine {
     this.chameleon.deactivatePowerUp();
     this.powerUpType = null;
     this.powerUpTimeLeft = 0;
+    this.screenShake = 0;
+    this.gameOverShakeFrames = 0;
     this.spawnInitialBugs();
     
     audio.resume();
@@ -432,7 +435,25 @@ class GameEngine {
     requestAnimationFrame((t) => this.loop(t));
   }
 
+  tickScreenShake() {
+    if (this.gameOverShakeFrames > 0) {
+      this.gameOverShakeFrames--;
+      if (this.screenShake > 0) {
+        this.screenShake = Math.max(0, this.screenShake - 0.8);
+      }
+      if (this.gameOverShakeFrames <= 0) {
+        this.screenShake = 0;
+      }
+      return;
+    }
+    if (this.state === 'PLAYING' && this.screenShake > 0) {
+      this.screenShake = Math.max(0, this.screenShake - 0.8);
+    }
+  }
+
   update() {
+    this.tickScreenShake();
+
     if (this.state !== 'PLAYING') {
       // Gentle animations on Title Screen
       this.chameleon.update(this.keys, null, this.bugs);
@@ -558,7 +579,6 @@ class GameEngine {
     }
 
     // 8. Decay visual animations
-    if (this.screenShake > 0) this.screenShake -= 0.8;
     if (this.levelUpBannerFrames > 0) this.levelUpBannerFrames--;
   }
 
@@ -577,6 +597,10 @@ class GameEngine {
     this.state = 'GAMEOVER';
     audio.stopBGM();
     audio.playGameOver();
+
+    // 画面揺れはゲームオーバー直後の 1 秒のみ
+    this.gameOverShakeFrames = 60;
+    this.screenShake = Math.max(this.screenShake, 12);
     
     // Save high score
     if (this.score > this.highScore) {
@@ -590,8 +614,11 @@ class GameEngine {
   draw() {
     this.ctx.save();
     
-    // Apply screen shake
-    if (this.screenShake > 0) {
+    // Apply screen shake (PLAYING 中、または GAMEOVER 直後 1 秒間のみ)
+    const canShake = this.screenShake > 0 && (
+      this.state === 'PLAYING' || this.gameOverShakeFrames > 0
+    );
+    if (canShake) {
       const dx = (Math.random() - 0.5) * this.screenShake;
       const dy = (Math.random() - 0.5) * this.screenShake;
       this.ctx.translate(dx, dy);
@@ -739,17 +766,14 @@ class GameEngine {
     this.ctx.fillText(`HI-SCORE:${String(this.highScore).padStart(6, '0')}`, 138, 12);
 
     if (isPlaying) {
-      this.drawBugLegend();
-
-      // Stats row (below score + bug legend)
       this.ctx.font = '6px "Press Start 2P", monospace';
       this.ctx.fillStyle = '#ff007f';
-      this.ctx.fillText(`LVL:${this.level}`, 100, 30);
+      this.ctx.fillText(`LVL:${this.level}`, 100, 22);
 
       if (this.combo > 1) {
         const comboGlow = Math.sin(this.comboTimer * 0.2) > 0;
         this.ctx.fillStyle = comboGlow ? '#ffea00' : '#ffffff';
-        this.ctx.fillText(`COMBO x${this.combo}`, 160, 30);
+        this.ctx.fillText(`COMBO x${this.combo}`, 160, 22);
       }
 
       // Power Up Active Text (above hunger bar)
@@ -835,47 +859,6 @@ class GameEngine {
         this.ctx.textAlign = 'left'; // reset
       }
     }
-  }
-
-  drawBugLegend() {
-    const types = Bug.LEGEND_ORDER;
-    const panelX = 6;
-    const panelY = 14;
-    const itemW = 62;
-    const panelW = itemW * types.length;
-    const panelH = 12;
-    const iconScale = 1.25;
-    const iconOffsetX = 5;
-    const scoreOffsetX = 14;
-    const centerY = panelY + 7;
-
-    this.ctx.save();
-
-    this.ctx.fillStyle = 'rgba(5, 5, 12, 0.72)';
-    this.ctx.fillRect(panelX - 2, panelY - 2, panelW + 4, panelH);
-    this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.25)';
-    this.ctx.lineWidth = 1;
-    this.ctx.strokeRect(panelX - 2, panelY - 2, panelW + 4, panelH);
-
-    this.ctx.font = '5px "Press Start 2P", monospace';
-    this.ctx.textAlign = 'left';
-
-    types.forEach((type, i) => {
-      const meta = Bug.TYPE_META[type];
-      const baseX = panelX + i * itemW;
-      const iconX = baseX + iconOffsetX;
-
-      this.ctx.save();
-      this.ctx.translate(iconX, centerY);
-      this.ctx.scale(iconScale, iconScale);
-      Bug.drawSprite(this.ctx, type, 0, 1.2);
-      this.ctx.restore();
-
-      this.ctx.fillStyle = meta.scoreValue < 0 ? '#ff3b30' : '#ffea00';
-      this.ctx.fillText(Bug.formatScoreValue(meta.scoreValue), baseX + scoreOffsetX, centerY + 2);
-    });
-
-    this.ctx.restore();
   }
 
   drawLowHungerWarning() {
@@ -976,7 +959,7 @@ class GameEngine {
     this.ctx.fillStyle = '#ffffff';
     this.ctx.fillText(`YOUR SCORE: ${this.score}`, this.width / 2, 115);
     this.ctx.fillStyle = '#39ff14';
-    this.ctx.fillText(`fliesEaten: ${this.fliesEaten}`, this.width / 2, 130);
+    this.ctx.fillText(`FLIES CAUGHT: ${this.fliesEaten}`, this.width / 2, 130);
     
     if (this.score >= this.highScore && this.score > 0) {
       this.ctx.fillStyle = '#ffea00';
