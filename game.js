@@ -257,8 +257,8 @@ class GameEngine {
       }
     });
 
-    // Game Boy Action buttons (A & B)
-    const actionBtns = ['gb-btn-a', 'gb-btn-b'];
+    // Game Boy Action button (A)
+    const actionBtns = ['gb-btn-a'];
     actionBtns.forEach(id => {
       const btn = document.getElementById(id);
       if (btn) {
@@ -285,27 +285,26 @@ class GameEngine {
       }
     });
 
-    // Game Boy SELECT & START buttons
-    const selectBtn = document.getElementById('gb-select-btn');
-    const startBtn = document.getElementById('gb-start-btn');
+    // Game Boy MENU button
+    const menuBtn = document.getElementById('gb-menu-btn');
     const settingsModal = document.getElementById('settings-modal');
     const instructionsModal = document.getElementById('instructions-modal');
     const settingsCloseBtn = document.getElementById('settings-close-btn');
     const infoCloseBtn = document.getElementById('info-close-btn');
 
-    if (selectBtn && settingsModal) {
+    if (menuBtn && settingsModal) {
       const toggleSettings = (e) => {
         e.preventDefault();
         e.stopPropagation();
         settingsModal.classList.toggle('show');
-        selectBtn.classList.add('active');
-        setTimeout(() => selectBtn.classList.remove('active'), 120);
+        menuBtn.classList.add('active');
+        setTimeout(() => menuBtn.classList.remove('active'), 120);
         audio.init();
         audio.resume();
       };
-      selectBtn.addEventListener('click', toggleSettings);
-      selectBtn.addEventListener('touchstart', toggleSettings, { passive: false });
-      blockTouchScroll(selectBtn);
+      menuBtn.addEventListener('click', toggleSettings);
+      menuBtn.addEventListener('touchstart', toggleSettings, { passive: false });
+      blockTouchScroll(menuBtn);
     }
 
     if (settingsCloseBtn && settingsModal) {
@@ -317,21 +316,6 @@ class GameEngine {
       settingsCloseBtn.addEventListener('touchstart', closeSettings, { passive: false });
     }
 
-    if (startBtn && instructionsModal) {
-      const toggleInstructions = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        instructionsModal.classList.toggle('show');
-        startBtn.classList.add('active');
-        setTimeout(() => startBtn.classList.remove('active'), 120);
-        audio.init();
-        audio.resume();
-      };
-      startBtn.addEventListener('click', toggleInstructions);
-      startBtn.addEventListener('touchstart', toggleInstructions, { passive: false });
-      blockTouchScroll(startBtn);
-    }
-
     if (infoCloseBtn && instructionsModal) {
       const closeInstructions = (e) => {
         e.preventDefault();
@@ -341,27 +325,38 @@ class GameEngine {
       infoCloseBtn.addEventListener('touchstart', closeInstructions, { passive: false });
     }
 
+    const infoToggleBtn = document.getElementById('info-toggle-btn');
+    if (infoToggleBtn && instructionsModal) {
+      const toggleInstructions = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        instructionsModal.classList.toggle('show');
+        audio.init();
+        audio.resume();
+      };
+      infoToggleBtn.addEventListener('click', toggleInstructions);
+      infoToggleBtn.addEventListener('touchstart', toggleInstructions, { passive: false });
+    }
+    blockTouchScroll(infoToggleBtn);
+
     // Close modals on window click/touchstart if clicking outside
     window.addEventListener('click', (e) => {
-      if (instructionsModal && instructionsModal.classList.contains('show') && !instructionsModal.contains(e.target) && e.target !== startBtn) {
+      if (instructionsModal && instructionsModal.classList.contains('show') && !instructionsModal.contains(e.target) && e.target !== infoToggleBtn) {
         instructionsModal.classList.remove('show');
       }
-      if (settingsModal && settingsModal.classList.contains('show') && !settingsModal.contains(e.target) && e.target !== selectBtn) {
+      if (settingsModal && settingsModal.classList.contains('show') && !settingsModal.contains(e.target) && e.target !== menuBtn) {
         settingsModal.classList.remove('show');
       }
     });
 
     window.addEventListener('touchstart', (e) => {
-      if (instructionsModal && instructionsModal.classList.contains('show') && !instructionsModal.contains(e.target) && e.target !== startBtn) {
+      if (instructionsModal && instructionsModal.classList.contains('show') && !instructionsModal.contains(e.target) && e.target !== infoToggleBtn) {
         instructionsModal.classList.remove('show');
       }
-      if (settingsModal && settingsModal.classList.contains('show') && !settingsModal.contains(e.target) && e.target !== selectBtn) {
+      if (settingsModal && settingsModal.classList.contains('show') && !settingsModal.contains(e.target) && e.target !== menuBtn) {
         settingsModal.classList.remove('show');
       }
     }, { passive: true });
-
-    const infoToggleBtn = document.getElementById('info-toggle-btn');
-    blockTouchScroll(infoToggleBtn);
 
     const gameCabinet = document.querySelector('.arcade-cabinet');
     if (gameCabinet) {
