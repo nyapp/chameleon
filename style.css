@@ -30,7 +30,7 @@
 #game-canvas,
 .gb-dpad-btn,
 .gb-action-btn,
-.gb-sys-btn,
+.gb-menu-control,
 .info-toggle-btn,
 .cabinet-marquee {
   -webkit-touch-callout: none;
@@ -312,6 +312,21 @@ body {
   animation-play-state: paused !important;
 }
 
+/* Perf-lite: reduce GPU compositing during gameplay (all environments) */
+html.perf-lite .screen-flicker,
+html.perf-lite .cabinet-marquee::after,
+html.perf-lite .glow-text {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-flicker,
+  .cabinet-marquee::after,
+  .glow-text {
+    animation: none !important;
+  }
+}
+
 /* CRT Turn On/Off static overlay */
 .screen-static {
   position: absolute;
@@ -527,43 +542,51 @@ body {
   top: 8px;
 }
 
-/* System Button: MENU (compact) */
+/* System Button: MENU */
 .gb-system-buttons {
   display: flex;
-  gap: 8px;
   justify-content: center;
   align-items: flex-end;
   justify-self: center;
   align-self: end;
-  cursor: pointer;
-  padding: 4px 8px;
 }
 
-.gb-sys-btn-wrapper {
+.gb-menu-control {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-end;
   gap: 3px;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 8px 12px;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
 }
 
-.gb-sys-btn {
+.gb-menu-pill {
+  display: block;
   width: 24px;
   height: 6px;
   background: #555566;
   border: 1px solid #1a1a24;
   border-radius: 3px;
   transform: rotate(-20deg);
-  cursor: pointer;
-  box-shadow: 
+  box-shadow:
     0 2px 3px rgba(0,0,0,0.5),
     inset 0 1px 1px rgba(255,255,255,0.1);
-  outline: none;
-  transition: all 0.05s ease;
+  pointer-events: none;
 }
 
-.gb-sys-btn:active, .gb-sys-btn.active {
+.gb-menu-control:active .gb-menu-pill,
+.gb-menu-control.active .gb-menu-pill {
   background: #333344;
-  box-shadow: 
+  box-shadow:
     0 1px 1px rgba(0,0,0,0.3),
     inset 0 1px 3px rgba(0,0,0,0.8);
   transform: rotate(-20deg) translateY(1px);
@@ -577,6 +600,21 @@ body {
   text-shadow: 1px 1px 0px rgba(0,0,0,0.3);
   transform: rotate(-5deg);
   pointer-events: none;
+  user-select: none;
+}
+
+/* Modal backdrop for settings */
+.modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(0, 0, 0, 0.55);
+  touch-action: manipulation;
+}
+
+.modal-backdrop:not([hidden]) {
+  display: block;
 }
 
 /* Action Button: A */
@@ -1224,18 +1262,22 @@ body {
   .gb-system-buttons {
     pointer-events: auto;
     margin-top: 0;
-    padding-bottom: 0;
-    gap: 8px;
     align-items: flex-end;
   }
 
-  .gb-sys-btn {
+  #gb-menu-btn.gb-menu-control {
+    pointer-events: auto;
+    min-width: 48px;
+    min-height: 48px;
+  }
+
+  .gb-menu-pill {
     width: 22px;
-    height: 6px;
     transform: rotate(-12deg);
   }
-  
-  .gb-sys-btn:active, .gb-sys-btn.active {
+
+  .gb-menu-control:active .gb-menu-pill,
+  .gb-menu-control.active .gb-menu-pill {
     transform: rotate(-12deg) translateY(1px);
   }
 

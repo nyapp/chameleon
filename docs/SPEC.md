@@ -1,6 +1,6 @@
 # NEO CHAMELEON — ゲーム仕様書
 
-本ドキュメントは **コードベース準拠** の現行仕様を記述する。実装の正は `game.js` / `chameleon.js` / `bugs.js` / `audio.js` / `index.html` を参照すること。
+本ドキュメントは **コードベース準拠** の現行仕様を記述する。実装の正は `game.js` / `chameleon.js` / `bugs.js` / `audio.js` / `perf.js` / `render-glow.js` / `index.html` を参照すること。
 
 ---
 
@@ -29,7 +29,16 @@
 ### 1.4 ゲームループ
 
 - `requestAnimationFrame` による `update()` → `draw()` ループ
-- フレームレートはブラウザ依存（設計上 60fps 想定。タイマー類はフレーム単位で記述）
+- `PLAYING` 時は最大 **60fps**（`Perf.TARGET_FPS_PLAYING`）。`TITLE` / `PAUSED` / `GAMEOVER` は **30fps** に間引き（`Perf.TARGET_FPS_IDLE`）
+- タブ非表示（`document.hidden`）時は `update` / `draw` をスキップし、BGM を停止。復帰時に条件を満たせば BGM を再開
+- 背景のグリッド・地平線・太陽は `bgCanvas` にキャッシュし、毎フレームは `drawImage` + 星点滅（`ctxFlicker`）のみ
+- タイマー類はフレーム単位で記述（`PLAYING` 中のゲームロジック速度は従来どおり）
+
+### 1.5 描画パフォーマンス
+
+- ネオン表現は Canvas `shadowBlur` を使わず、`render-glow.js` の二重 stroke / ハロー `fillRect` で統一
+- `html.perf-lite`（`perf.js` 起動時に付与）で CRT フリッカー・マーキー sweep・タイトル pulse の CSS アニメを無効化
+- 設定メニュー表示中は `.game-paused` で上記アニメを一時停止（既存）
 
 ---
 
@@ -41,11 +50,8 @@
 |------|------|
 | `TITLE` | タイトル画面。エンティティはアニメーションのみ更新 |
 | `PLAYING` | 本編。空腹減少・捕食・スコア処理が有効 |
+| `PAUSED` | 設定メニュー（`frozenByMenu`）から遷移。更新停止・`PAUSED` オーバーレイ・BGM 一時停止 |
 | `GAMEOVER` | ゲームオーバー画面。ハイスコア保存 |
-
-### 未実装
-
-コメント上 `PAUSED` が列挙されているが、**参照・遷移・描画のいずれも未実装**（定義のみ）。
 
 ---
 
@@ -89,9 +95,10 @@
 
 | 操作 | 動作 |
 |------|------|
-| `gb-select-btn`（SELECT） | `#settings-modal` の表示切替 |
-| `gb-start-btn`（START） | `#instructions-modal` の表示切替 |
-| モーダル外クリック/タッチ | 該当モーダルを閉じる |
+| `gb-menu-btn`（MENU） | `#settings-modal` の表示切替。`PLAYING` 中は `PAUSED` に遷移しシミュレーション停止・BGM 一時停止・`PAUSED` オーバーレイ表示 |
+| `#info-toggle-btn`（HELP） | `#instructions-modal` の表示切替 |
+| `#settings-close-btn` / `#settings-backdrop` | 設定モーダルを閉じ、`PAUSED` なら `PLAYING` に復帰 |
+| HELP モーダル外タップ | `#instructions-modal` を閉じる（設定はバックドロップのみで閉じる） |
 
 ### 3.5 照準カーソル（ゲーム内 HUD）
 
@@ -429,17 +436,19 @@ GAMEOVER → 操作で resetGame → 静的 300ms → startGame()
 | ファイル | 責務 |
 |----------|------|
 | `index.html` | DOM、モーダル、スクリプト読み込み順 |
+| `perf.js` | FPS 定数、`perf-lite` クラス付与 |
+| `render-glow.js` | 軽量ネオン描画ヘルパ（`RenderGlow`） |
 | `style.css` | キャビネット・CRT・Game Boy UI・モーダル |
 | `game.js` | `GameEngine`：ループ、状態、入力、スコア、当たり、HUD 描画 |
 | `chameleon.js` | `Chameleon`：照準、舌状態機械、スプライト描画 |
 | `bugs.js` | `Bug`：種別パラメータ、移動、描画 |
-| `audio.js` | `RetroAudio`：BGM/SFX、音量永続化 |
+| `audio.js` | `RetroAudio`：BGM/SFX、音量永続化、BGM ノイズバッファ再利用 |
 
 ### 拡張時のフック例
 
 | 機能 | 推奨編集箇所 |
 |------|--------------|
-| `PAUSED` 実装 | `game.js` `update`/`draw`、入力で `state` 切替 |
+| ループ・省電力調整 | `perf.js`、`game.js` `loop` / `handlePageVisibility` / `buildBackgroundCache` |
 | HELP ボタン | `game.js` `initEventListeners` に `#info-toggle-btn` → `instructions-modal` |
 | 新バグ種別 | `bugs.js` `initTypeProperties` / `update` / `draw`、`game.js` スポーン配列・捕食分岐 |
 | 新パワーアップ | `game.js` `triggerRandomPowerUp`、`chameleon.js` `activatePowerUp` / 描画 |
@@ -453,7 +462,7 @@ GAMEOVER → 操作で resetGame → 静的 300ms → startGame()
 | 項目 | UI / コメント | コードの実態 |
 |------|---------------|--------------|
 | スコア表示（凡例） | 固定点数（100, 300 等） | ベース点 × 現在コンボ（§7.1） |
-| ゲーム状態 | — | `PAUSED` は未実装 |
+| ゲーム状態 | — | `PAUSED` は設定メニュー連動で実装済み |
 | マーキー HELP ボタン | ボタン存在 | **イベント未接続**。操作説明は START |
 | `multi` パワーアップ | 「TRIPLE TONGUE」 | 副舌は見た目のみ、当たりは主舌のみ |
 | 左右キー | ヘルプは上下のみ記載 | コードも上下のみ（一致） |

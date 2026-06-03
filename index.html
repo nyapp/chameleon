@@ -66,10 +66,10 @@
 
           <!-- Center: Menu Button -->
           <div class="gb-system-buttons">
-            <div class="gb-sys-btn-wrapper">
-              <button class="gb-sys-btn" id="gb-menu-btn" aria-label="Menu"></button>
+            <button type="button" class="gb-menu-control" id="gb-menu-btn" aria-label="設定メニュー">
+              <span class="gb-menu-pill" aria-hidden="true"></span>
               <span class="gb-sys-label">MENU</span>
-            </div>
+            </button>
           </div>
 
           <!-- Right side: Action Button -->
@@ -127,6 +127,9 @@
     </div>
   </div>
 
+  <!-- Settings backdrop (tap to close) -->
+  <div id="settings-backdrop" class="modal-backdrop" hidden></div>
+
   <!-- Settings Panel / Modal -->
   <div class="instructions-panel" id="settings-modal">
     <div class="instructions-header">
@@ -173,6 +176,8 @@
   </div>
 
   <!-- Game Scripts -->
+  <script src="perf.js"></script>
+  <script src="render-glow.js"></script>
   <script src="audio.js"></script>
   <script src="chameleon.js"></script>
   <script src="bugs.js"></script>

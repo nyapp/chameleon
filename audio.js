@@ -23,6 +23,9 @@ class RetroAudio {
     this.sfxEnabled = true;
     this.bgmVolumePercent = this._loadStoredVolume('neo_chameleon_bgm_volume', DEFAULT_BGM_VOLUME_PERCENT);
     this.sfxVolumePercent = this._loadStoredVolume('neo_chameleon_sfx_volume', DEFAULT_SFX_VOLUME_PERCENT);
+
+    this.bgmNoiseHat = null;
+    this.bgmNoiseSnare = null;
   }
 
   _loadStoredVolume(key, fallback) {
@@ -80,11 +83,31 @@ class RetroAudio {
     
     this._applyBgmGain();
     this._applySfxGain();
-    
+    this._buildBgmNoiseBuffers();
+
     // Start BGM loop if allowed
     if (this.musicEnabled) {
       this.startBGM();
     }
+  }
+
+  _buildBgmNoiseBuffers() {
+    if (!this.ctx || this.bgmNoiseHat) return;
+
+    this.bgmNoiseHat = this._createNoiseBuffer(0.01);
+    this.bgmNoiseSnare = this._createNoiseBuffer(0.05);
+  }
+
+  _createNoiseBuffer(duration) {
+    const bufferSize = Math.ceil(this.ctx.sampleRate * duration);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+
+    return buffer;
   }
 
   resume() {
@@ -364,29 +387,26 @@ class RetroAudio {
   }
 
   playNoiseAt(duration, volume, time, outputGain) {
-    const bufferSize = this.ctx.sampleRate * duration;
-    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1;
-    }
-    
+    this._buildBgmNoiseBuffers();
+
+    const buffer = duration <= 0.02 ? this.bgmNoiseHat : this.bgmNoiseSnare;
+    if (!buffer) return;
+
     const noiseNode = this.ctx.createBufferSource();
     noiseNode.buffer = buffer;
-    
+
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'highpass';
     filter.frequency.value = 4000;
-    
+
     const gainNode = this.ctx.createGain();
     gainNode.gain.setValueAtTime(volume, time);
     gainNode.gain.exponentialRampToValueAtTime(0.001, time + duration);
-    
+
     noiseNode.connect(filter);
     filter.connect(gainNode);
     gainNode.connect(outputGain);
-    
+
     noiseNode.start(time);
     noiseNode.stop(time + duration);
   }

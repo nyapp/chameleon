@@ -15,6 +15,8 @@ class GameEngine {
     this.state = 'TITLE';
     this.frozenByMenu = false;
     this.bgmPausedByMenu = false;
+    this.wasBgmPlayingBeforeHide = false;
+    this.lastFrameTime = 0;
     
     this.score = 0;
     this.fliesEaten = 0;
@@ -55,11 +57,15 @@ class GameEngine {
     // On-screen cabinet references
     this.staticLayer = document.getElementById('power-static');
     
+    this.bgCanvas = document.createElement('canvas');
+    this.bgCanvas.width = this.width;
+    this.bgCanvas.height = this.height;
+    this.bgCtx = this.bgCanvas.getContext('2d');
+    this.buildBackgroundCache();
+
     this.initEventListeners();
     this.spawnInitialBugs();
     
-    // Start game loop
-    this.lastTime = 0;
     requestAnimationFrame((t) => this.loop(t));
     
     // Boot sequence: show retro screen static, then title
@@ -69,7 +75,7 @@ class GameEngine {
   initEventListeners() {
     // Keyboard inputs
     window.addEventListener('keydown', (e) => {
-      if (this.state === 'PAUSED') return;
+      if (this.isGameFrozen()) return;
 
       this.keys[e.code] = true;
 
@@ -233,23 +239,24 @@ class GameEngine {
       el.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
     };
 
-    // pointerdown + click（端末差を吸収、400ms 以内の二重発火は無視）
+    // touchstart / mousedown のみ（iOS の ghost click 回避）
     const bindTap = (el, handler) => {
       if (!el) return;
       let lastTapAt = 0;
       const run = (e) => {
         const now = Date.now();
-        if (now - lastTapAt < 400) return;
+        if (now - lastTapAt < 450) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
         lastTapAt = now;
         e.preventDefault();
         e.stopPropagation();
         handler(e);
       };
-      el.addEventListener('pointerdown', (e) => {
-        if (e.pointerType === 'mouse' && e.button !== 0) return;
-        run(e);
-      });
-      el.addEventListener('click', run);
+      el.addEventListener('touchstart', run, { passive: false });
+      el.addEventListener('mousedown', run);
       blockTouchScroll(el);
     };
 
@@ -258,7 +265,7 @@ class GameEngine {
       if (btn) {
         const handleStart = (e) => {
           e.preventDefault();
-          if (this.state === 'PAUSED') return;
+          if (this.isGameFrozen()) return;
           this.keys[key] = true;
           this.dpadUIButtons[key] = true;
           btn.classList.add('active');
@@ -313,17 +320,17 @@ class GameEngine {
 
     // Game Boy MENU button
     const menuBtn = document.getElementById('gb-menu-btn');
-    const menuArea = document.querySelector('.gb-system-buttons');
     const settingsModal = document.getElementById('settings-modal');
+    const settingsBackdrop = document.getElementById('settings-backdrop');
     const instructionsModal = document.getElementById('instructions-modal');
     const settingsCloseBtn = document.getElementById('settings-close-btn');
     const infoCloseBtn = document.getElementById('info-close-btn');
 
-    if (menuArea && settingsModal) {
-      bindTap(menuArea, () => {
-        this.setSettingsMenuOpen(!settingsModal.classList.contains('show'));
-        menuBtn?.classList.add('active');
-        setTimeout(() => menuBtn?.classList.remove('active'), 120);
+    if (menuBtn && settingsModal) {
+      bindTap(menuBtn, () => {
+        this.toggleSettingsMenu();
+        menuBtn.classList.add('active');
+        setTimeout(() => menuBtn.classList.remove('active'), 120);
         audio.init();
         audio.resume();
       });
@@ -331,7 +338,13 @@ class GameEngine {
 
     if (settingsCloseBtn && settingsModal) {
       bindTap(settingsCloseBtn, () => {
-        this.setSettingsMenuOpen(false);
+        this.closeSettingsMenu();
+      });
+    }
+
+    if (settingsBackdrop) {
+      bindTap(settingsBackdrop, () => {
+        this.closeSettingsMenu();
       });
     }
 
@@ -358,15 +371,13 @@ class GameEngine {
     }
     blockTouchScroll(infoToggleBtn);
 
-    // Close modals when clicking outside
-    window.addEventListener('pointerdown', (e) => {
+    const handleInstructionsOutside = (e) => {
+      if (e.type === 'mousedown' && window.matchMedia('(hover: none)').matches) return;
       if (instructionsModal && instructionsModal.classList.contains('show') && !instructionsModal.contains(e.target) && !infoToggleBtn?.contains(e.target)) {
         instructionsModal.classList.remove('show');
       }
-      if (settingsModal && settingsModal.classList.contains('show') && !settingsModal.contains(e.target) && !e.target.closest('.gb-system-buttons')) {
-        this.setSettingsMenuOpen(false);
-      }
-    });
+    };
+    window.addEventListener('touchstart', handleInstructionsOutside, { passive: true });
 
     const gameCabinet = document.querySelector('.arcade-cabinet');
     if (gameCabinet) {
@@ -376,11 +387,35 @@ class GameEngine {
 
     document.addEventListener('touchmove', (e) => {
       if (e.target.closest('input[type="range"]')) return;
-      if (e.target.closest('#settings-modal.show, #instructions-modal.show')) return;
+      if (e.target.closest('#settings-modal.show, #instructions-modal.show, #settings-backdrop:not([hidden])')) return;
       if (e.target.closest('.arcade-cabinet')) {
         e.preventDefault();
       }
     }, { passive: false });
+
+    document.addEventListener('visibilitychange', () => this.handlePageVisibility());
+  }
+
+  handlePageVisibility() {
+    if (document.hidden) {
+      this.wasBgmPlayingBeforeHide = audio.isBgmPlaying;
+      if (this.wasBgmPlayingBeforeHide) {
+        audio.stopBGM();
+      }
+      return;
+    }
+    this.tryResumeBgmAfterVisible();
+  }
+
+  tryResumeBgmAfterVisible() {
+    if (!this.wasBgmPlayingBeforeHide) return;
+    this.wasBgmPlayingBeforeHide = false;
+
+    const musicToggle = document.getElementById('music-toggle');
+    if (!musicToggle?.checked) return;
+    if (this.state !== 'PLAYING' || this.isGameFrozen() || this.bgmPausedByMenu) return;
+
+    audio.startBGM();
   }
 
   triggerBootSequence() {
@@ -439,6 +474,7 @@ class GameEngine {
   }
 
   startGame() {
+    this.closeSettingsMenu();
     this.state = 'PLAYING';
     this.score = 0;
     this.fliesEaten = 0;
@@ -465,7 +501,7 @@ class GameEngine {
   }
 
   isGameFrozen() {
-    return this.frozenByMenu || this.isSettingsMenuOpen();
+    return this.frozenByMenu;
   }
 
   applyPausePresentation(paused) {
@@ -499,27 +535,72 @@ class GameEngine {
     }
   }
 
-  isSettingsMenuOpen() {
-    return document.getElementById('settings-modal')?.classList.contains('show') ?? false;
+  openSettingsMenu() {
+    const settingsModal = document.getElementById('settings-modal');
+    const settingsBackdrop = document.getElementById('settings-backdrop');
+    if (!settingsModal || this.frozenByMenu) return;
+
+    this.frozenByMenu = true;
+    settingsModal.classList.add('show');
+    if (settingsBackdrop) settingsBackdrop.hidden = false;
+    this.applyPausePresentation(true);
+
+    if (this.state === 'PLAYING') {
+      this.pauseGame();
+    }
   }
 
-  setSettingsMenuOpen(open) {
+  closeSettingsMenu() {
     const settingsModal = document.getElementById('settings-modal');
+    const settingsBackdrop = document.getElementById('settings-backdrop');
     if (!settingsModal) return;
-    const wasOpen = settingsModal.classList.contains('show');
-    if (open === wasOpen) return;
+    if (!this.frozenByMenu && !settingsModal.classList.contains('show')) return;
 
-    this.frozenByMenu = open;
-    settingsModal.classList.toggle('show', open);
-    this.applyPausePresentation(open);
+    const wasPaused = this.state === 'PAUSED';
+    this.frozenByMenu = false;
+    settingsModal.classList.remove('show');
+    if (settingsBackdrop) settingsBackdrop.hidden = true;
+    this.applyPausePresentation(false);
 
-    if (open) this.pauseGame();
-    else this.resumeGame();
+    if (wasPaused) {
+      this.resumeGame();
+    }
+  }
+
+  toggleSettingsMenu() {
+    if (this.frozenByMenu) {
+      this.closeSettingsMenu();
+      return;
+    }
+    this.openSettingsMenu();
   }
 
   // --- CORE GAME LOOP ---
 
   loop(timestamp) {
+    if (document.hidden) {
+      requestAnimationFrame((t) => this.loop(t));
+      return;
+    }
+
+    if (this.frozenByMenu) {
+      if (this.state === 'PLAYING') this.pauseGame();
+      this.draw();
+      requestAnimationFrame((t) => this.loop(t));
+      return;
+    }
+
+    const idleState = this.state !== 'PLAYING';
+    const targetInterval = idleState
+      ? 1000 / Perf.TARGET_FPS_IDLE
+      : 1000 / Perf.TARGET_FPS_PLAYING;
+
+    if (this.lastFrameTime && timestamp - this.lastFrameTime < targetInterval - 1) {
+      requestAnimationFrame((t) => this.loop(t));
+      return;
+    }
+
+    this.lastFrameTime = timestamp;
     this.update();
     this.draw();
     requestAnimationFrame((t) => this.loop(t));
@@ -542,7 +623,7 @@ class GameEngine {
   }
 
   update() {
-    if (this.isGameFrozen()) {
+    if (this.frozenByMenu) {
       if (this.state === 'PLAYING') this.pauseGame();
       return;
     }
@@ -711,7 +792,7 @@ class GameEngine {
     
     // Apply screen shake (PLAYING 中、または GAMEOVER 直後 1 秒間のみ)
     const canShake = this.screenShake > 0 && (
-      this.state === 'PLAYING' || this.state === 'PAUSED' || this.gameOverShakeFrames > 0
+      this.state === 'PLAYING' || this.gameOverShakeFrames > 0
     );
     if (canShake) {
       const dx = (Math.random() - 0.5) * this.screenShake;
@@ -773,20 +854,17 @@ class GameEngine {
     const tx = this.chameleon.pivotX + Math.cos(this.chameleon.angle) * this.chameleon.tongueMaxLen;
     const ty = this.chameleon.pivotY + Math.sin(this.chameleon.angle) * this.chameleon.tongueMaxLen;
     
-    // Draw a beautiful retro neon-pink target crosshair
     this.ctx.save();
-    
-    // Set neon pink glow
-    this.ctx.shadowColor = '#ff007f';
-    this.ctx.shadowBlur = 4;
-    
+
+    RenderGlow.strokeNeonArc(this.ctx, tx, ty, 5, {
+      color: '#ff007f',
+      width: 1.5,
+      glowWidth: 2,
+      glowAlpha: 0.35
+    });
+
     this.ctx.strokeStyle = '#ff007f';
     this.ctx.lineWidth = 1.5;
-    
-    // Draw a small target circle
-    this.ctx.beginPath();
-    this.ctx.arc(tx, ty, 5, 0, Math.PI * 2);
-    this.ctx.stroke();
     
     // Draw center dot
     this.ctx.fillStyle = '#ffffff';
@@ -816,48 +894,49 @@ class GameEngine {
     this.ctx.restore();
   }
 
-  drawBackground() {
-    // Cyberpunk Grid Background
-    // Dark deep blue background
-    this.ctx.fillStyle = '#08080f';
-    this.ctx.fillRect(0, 0, this.width, this.height);
-    
-    // Draw neon pink horizon line
-    this.ctx.strokeStyle = '#9d00ff';
-    this.ctx.lineWidth = 1;
-    this.ctx.beginPath();
-    this.ctx.moveTo(0, 185);
-    this.ctx.lineTo(this.width, 185);
-    this.ctx.stroke();
+  buildBackgroundCache() {
+    const ctx = this.bgCtx;
+    const w = this.width;
+    const h = this.height;
 
-    // Floor neon grid lines (perspective simulation)
-    this.ctx.strokeStyle = 'rgba(255, 0, 127, 0.15)';
-    this.ctx.lineWidth = 1;
-    
-    // Horizontal lines
-    for (let y = 185; y < this.height; y += 8) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, y);
-      this.ctx.lineTo(this.width, y);
-      this.ctx.stroke();
+    ctx.fillStyle = '#08080f';
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.strokeStyle = '#9d00ff';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, 185);
+    ctx.lineTo(w, 185);
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(255, 0, 127, 0.15)';
+    ctx.lineWidth = 1;
+
+    for (let y = 185; y < h; y += 8) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
     }
-    // Vertical perspective lines radiating outward
-    const vp = this.width / 2; // vanishing point X
-    const vpy = 180; // vanishing point Y
-    for (let x = -100; x <= this.width + 100; x += 30) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(vp + (x - vp) * 0.1, vpy);
-      this.ctx.lineTo(x, this.height);
-      this.ctx.stroke();
+
+    const vp = w / 2;
+    const vpy = 180;
+    for (let x = -100; x <= w + 100; x += 30) {
+      ctx.beginPath();
+      ctx.moveTo(vp + (x - vp) * 0.1, vpy);
+      ctx.lineTo(x, h);
+      ctx.stroke();
     }
-    
-    // Glowing synth sun in distance
-    this.ctx.fillStyle = 'rgba(255, 0, 127, 0.04)';
-    this.ctx.beginPath();
-    this.ctx.arc(this.width / 2, 180, 50, Math.PI, 0);
-    this.ctx.fill();
-    
-    // Draw little pixelated clouds or neon star sparks in sky
+
+    ctx.fillStyle = 'rgba(255, 0, 127, 0.04)';
+    ctx.beginPath();
+    ctx.arc(w / 2, 180, 50, Math.PI, 0);
+    ctx.fill();
+  }
+
+  drawBackground() {
+    this.ctx.drawImage(this.bgCanvas, 0, 0);
+
     if (!this.isGameFrozen()) {
       ctxFlicker(this.ctx);
     }

@@ -90,8 +90,7 @@ class Bug {
         ctx.fillRect(-4, -4, 4, 2);
       }
     } else if (type === 'gnat') {
-      ctx.shadowColor = '#ffea00';
-      ctx.shadowBlur = 8;
+      RenderGlow.fillNeonHalo(ctx, -6, -6, 10, 8, '#ffea00', 0.45);
       ctx.fillStyle = '#b38600';
       ctx.fillRect(-2, -2, 4, 2);
       ctx.fillStyle = '#ffea00';
@@ -103,9 +102,8 @@ class Bug {
         ctx.fillRect(2, -2, 2, 2);
       }
     } else if (type === 'firefly') {
-      const glowAmt = Math.sin(glowCycle) * 6 + 10;
-      ctx.shadowColor = '#00f0ff';
-      ctx.shadowBlur = glowAmt;
+      const glowAlpha = 0.28 + (Math.sin(glowCycle) + 1) * 0.18;
+      RenderGlow.fillNeonHalo(ctx, -6, -6, 10, 8, '#00f0ff', glowAlpha);
       ctx.fillStyle = '#00c8ff';
       ctx.fillRect(-2, -2, 4, 4);
       ctx.fillStyle = '#ffffff';
@@ -119,8 +117,7 @@ class Bug {
       ctx.fillStyle = '#39ff14';
       ctx.fillRect(-4, 0, 2, 2);
     } else if (type === 'wasp') {
-      ctx.shadowColor = '#ff3b30';
-      ctx.shadowBlur = 6;
+      RenderGlow.fillNeonHalo(ctx, -7, -7, 14, 10, '#ff3b30', 0.4);
       ctx.fillStyle = '#ff3b30';
       ctx.fillRect(-4, -2, 8, 4);
       ctx.fillStyle = '#0a0a14';

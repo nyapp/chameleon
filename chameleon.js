@@ -344,25 +344,21 @@ class Chameleon {
       lineGlowColor = 'rgba(255, 234, 0, 0.4)';
     }
 
-    // Neon glow behind tongue line (adds synthwave aesthetic)
-    ctx.shadowColor = tongueColor;
-    ctx.shadowBlur = 10;
-    
-    ctx.strokeStyle = tongueColor;
-    ctx.lineWidth = 6;
     ctx.lineCap = 'round';
-    
     ctx.beginPath();
-    ctx.moveTo(0, 0); // start at pivot center in local coords
-    ctx.lineTo(this.tongueLen, 0); // end at tongue length on the rotated X-axis
-    ctx.stroke();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(this.tongueLen, 0);
+    RenderGlow.strokeNeonPath(ctx, {
+      color: tongueColor,
+      width: 6,
+      glowWidth: 3,
+      glowAlpha: 0.4,
+      lineCap: 'round'
+    });
 
-    // Reset shadow blur so canvas drawing doesn't slow down
-    ctx.shadowBlur = 0;
-
-    // Draw solid inner tongue core (for nice 8-bit aesthetic layered border effect)
     ctx.strokeStyle = tongueTipColor;
     ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(0, 0);
     ctx.lineTo(this.tongueLen, 0);
