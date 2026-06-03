@@ -15,6 +15,7 @@ class GameEngine {
     this.state = 'TITLE';
     
     this.score = 0;
+    this.fliesEaten = 0;
     this.highScore = parseInt(localStorage.getItem('neo_chameleon_highscore')) || 5000;
     this.level = 1;
     this.energy = 100; // Hunger meter 0-100
@@ -402,6 +403,7 @@ class GameEngine {
   startGame() {
     this.state = 'PLAYING';
     this.score = 0;
+    this.fliesEaten = 0;
     this.level = 1;
     this.energy = 100;
     this.combo = 0;
@@ -515,6 +517,7 @@ class GameEngine {
         audio.playHurt();
       } else {
         // Successful fly capture
+        this.fliesEaten++;
         this.combo++;
         this.comboTimer = this.maxComboTime;
         
@@ -733,39 +736,21 @@ class GameEngine {
     this.ctx.fillText(`HI-SCORE:${String(this.highScore).padStart(6, '0')}`, 138, 12);
 
     if (isPlaying) {
-      // Hunger Meter Label
+      // Second-row stats (hunger moved to bottom)
       this.ctx.font = '6px "Press Start 2P", monospace';
-      this.ctx.fillStyle = '#00f0ff';
-      this.ctx.fillText("HUNGER", 8, 22);
-      
-      // Energy Bar Outer Border
-      this.ctx.strokeStyle = '#2d2d44';
-      this.ctx.lineWidth = 1;
-      this.ctx.strokeRect(48, 17, 104, 6);
-      
-      // Fill Hunger Bar
-      let fillStyle = '#39ff14'; // green
-      if (this.energy < 30) {
-        fillStyle = '#ff3b30'; // flashing red if low energy
-      } else if (this.energy < 60) {
-        fillStyle = '#ffea00'; // yellow
-      }
-      
-      this.ctx.fillStyle = fillStyle;
-      this.ctx.fillRect(50, 19, Math.round(this.energy), 2);
-      
-      // Level Display
-      this.ctx.fillStyle = '#ff007f';
-      this.ctx.fillText(`LVL:${this.level}`, 160, 22);
+      this.ctx.fillStyle = '#39ff14';
+      this.ctx.fillText(`ハエ:${String(this.fliesEaten).padStart(3, '0')}`, 8, 22);
 
-      // Combo Display
+      this.ctx.fillStyle = '#ff007f';
+      this.ctx.fillText(`LVL:${this.level}`, 100, 22);
+
       if (this.combo > 1) {
         const comboGlow = Math.sin(this.comboTimer * 0.2) > 0;
         this.ctx.fillStyle = comboGlow ? '#ffea00' : '#ffffff';
-        this.ctx.fillText(`COMBO x${this.combo}`, 200, 22);
+        this.ctx.fillText(`COMBO x${this.combo}`, 160, 22);
       }
 
-      // Power Up Active Text (bottom center)
+      // Power Up Active Text (above hunger bar)
       if (this.powerUpType) {
         const secondsLeft = Math.ceil(this.powerUpTimeLeft / 60);
         let text = "";
@@ -786,9 +771,44 @@ class GameEngine {
         }
         this.ctx.fillStyle = color;
         this.ctx.textAlign = 'center';
-        this.ctx.fillText(text, this.width / 2, this.height - 10);
+        this.ctx.fillText(text, this.width / 2, this.height - 22);
         this.ctx.textAlign = 'left'; // reset
       }
+
+      // Bottom Hunger Meter (full width)
+      const hungerStripH = 18;
+      const barX = 8;
+      const barW = this.width - 16;
+      const barH = 7;
+      const barY = this.height - 9;
+      const innerPad = 2;
+      const fillMaxW = barW - innerPad * 2;
+
+      this.ctx.fillStyle = 'rgba(5, 5, 12, 0.75)';
+      this.ctx.fillRect(0, this.height - hungerStripH, this.width, hungerStripH);
+
+      this.ctx.font = '6px "Press Start 2P", monospace';
+      this.ctx.fillStyle = '#00f0ff';
+      this.ctx.fillText("HUNGER", barX, this.height - 12);
+
+      this.ctx.strokeStyle = '#2d2d44';
+      this.ctx.lineWidth = 1;
+      this.ctx.strokeRect(barX, barY, barW, barH);
+
+      let fillStyle = '#39ff14';
+      if (this.energy < 30) {
+        fillStyle = '#ff3b30';
+      } else if (this.energy < 60) {
+        fillStyle = '#ffea00';
+      }
+
+      this.ctx.fillStyle = fillStyle;
+      this.ctx.fillRect(
+        barX + innerPad,
+        barY + innerPad,
+        Math.round((this.energy / 100) * fillMaxW),
+        barH - innerPad * 2
+      );
       
       // LEVEL UP Splash Banner Banner
       if (this.levelUpBannerFrames > 0) {
@@ -857,15 +877,17 @@ class GameEngine {
     this.ctx.font = '8px "Press Start 2P", monospace';
     this.ctx.fillStyle = '#ffffff';
     this.ctx.fillText(`YOUR SCORE: ${this.score}`, this.width / 2, 115);
+    this.ctx.fillStyle = '#39ff14';
+    this.ctx.fillText(`EATEN FLIES: ${this.fliesEaten}`, this.width / 2, 130);
     
     if (this.score >= this.highScore && this.score > 0) {
       this.ctx.fillStyle = '#ffea00';
-      this.ctx.fillText("NEW HIGH SCORE! GLORIOUS!", this.width / 2, 132);
+      this.ctx.fillText("NEW HIGH SCORE! GLORIOUS!", this.width / 2, 148);
     }
     
     const flash = Math.floor(Date.now() / 400) % 2 === 0;
     this.ctx.fillStyle = flash ? '#00f0ff' : '#4e4e6d';
-    this.ctx.fillText("CLICK SCREEN TO CONTINUE", this.width / 2, 160);
+    this.ctx.fillText("CLICK SCREEN TO CONTINUE", this.width / 2, 168);
     
     this.ctx.textAlign = 'left'; // reset
   }
