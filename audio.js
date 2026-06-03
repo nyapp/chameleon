@@ -3,6 +3,11 @@
  * Generates custom retro square, triangle, and noise sound effects dynamically.
  */
 
+const MAX_BGM_GAIN = 0.8;
+const MAX_SFX_GAIN = 0.4;
+const DEFAULT_BGM_VOLUME_PERCENT = 30;
+const DEFAULT_SFX_VOLUME_PERCENT = 50;
+
 class RetroAudio {
   constructor() {
     this.ctx = null;
@@ -16,6 +21,48 @@ class RetroAudio {
     // Track indicators
     this.musicEnabled = true;
     this.sfxEnabled = true;
+    this.bgmVolumePercent = this._loadStoredVolume('neo_chameleon_bgm_volume', DEFAULT_BGM_VOLUME_PERCENT);
+    this.sfxVolumePercent = this._loadStoredVolume('neo_chameleon_sfx_volume', DEFAULT_SFX_VOLUME_PERCENT);
+  }
+
+  _loadStoredVolume(key, fallback) {
+    try {
+      const stored = parseInt(localStorage.getItem(key), 10);
+      if (!Number.isNaN(stored) && stored >= 0 && stored <= 100) {
+        return stored;
+      }
+    } catch (_) { /* ignore */ }
+    return fallback;
+  }
+
+  _persistVolume(key, percent) {
+    try {
+      localStorage.setItem(key, String(percent));
+    } catch (_) { /* ignore */ }
+  }
+
+  _applyBgmGain() {
+    if (this.masterBgmGain) {
+      this.masterBgmGain.gain.value = (this.bgmVolumePercent / 100) * MAX_BGM_GAIN;
+    }
+  }
+
+  _applySfxGain() {
+    if (this.masterSfxGain) {
+      this.masterSfxGain.gain.value = (this.sfxVolumePercent / 100) * MAX_SFX_GAIN;
+    }
+  }
+
+  setBgmVolume(percent) {
+    this.bgmVolumePercent = Math.max(0, Math.min(100, percent));
+    this._applyBgmGain();
+    this._persistVolume('neo_chameleon_bgm_volume', this.bgmVolumePercent);
+  }
+
+  setSfxVolume(percent) {
+    this.sfxVolumePercent = Math.max(0, Math.min(100, percent));
+    this._applySfxGain();
+    this._persistVolume('neo_chameleon_sfx_volume', this.sfxVolumePercent);
   }
 
   init() {
@@ -31,8 +78,8 @@ class RetroAudio {
     this.masterBgmGain.connect(this.ctx.destination);
     this.masterSfxGain.connect(this.ctx.destination);
     
-    this.masterBgmGain.gain.value = 0.15; // lower BGM volume
-    this.masterSfxGain.gain.value = 0.3; // higher SFX volume
+    this._applyBgmGain();
+    this._applySfxGain();
     
     // Start BGM loop if allowed
     if (this.musicEnabled) {

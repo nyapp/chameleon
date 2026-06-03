@@ -139,12 +139,26 @@
           <span class="slider"></span>
         </label>
       </div>
+      <div class="volume-container">
+        <div class="volume-header">
+          <span class="switch-label">BGM VOLUME</span>
+          <span class="volume-value" id="bgm-volume-value">30%</span>
+        </div>
+        <input type="range" id="bgm-volume-slider" class="volume-slider" min="0" max="100" value="30" aria-label="BGM volume">
+      </div>
       <div class="switch-container">
         <span class="switch-label">SFX SOUND</span>
         <label class="toggle-switch">
           <input type="checkbox" id="sfx-toggle" checked>
           <span class="slider"></span>
         </label>
+      </div>
+      <div class="volume-container">
+        <div class="volume-header">
+          <span class="switch-label">SFX VOLUME</span>
+          <span class="volume-value" id="sfx-volume-value">50%</span>
+        </div>
+        <input type="range" id="sfx-volume-slider" class="volume-slider" min="0" max="100" value="50" aria-label="SFX volume">
       </div>
     </div>
   </div>

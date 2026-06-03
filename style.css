@@ -669,6 +669,67 @@ body {
   border: 1px solid #202035;
 }
 
+.settings-content .volume-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #090911;
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: 1px solid #202035;
+}
+
+.volume-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.volume-value {
+  font-family: var(--font-arcade);
+  font-size: 0.55rem;
+  color: var(--neon-blue);
+  letter-spacing: 1px;
+}
+
+.volume-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: #202035;
+  outline: none;
+  cursor: pointer;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--neon-purple);
+  border: 2px solid var(--neon-blue);
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+}
+
+.volume-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--neon-purple);
+  border: 2px solid var(--neon-blue);
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+  cursor: pointer;
+}
+
+.volume-slider::-moz-range-track {
+  height: 8px;
+  border-radius: 4px;
+  background: #202035;
+}
+
 /* Instructions / Side Panels */
 .instructions-panel {
   background: rgba(13, 13, 22, 0.85);

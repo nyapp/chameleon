@@ -41,6 +41,12 @@ class GameEngine {
     // Inputs
     this.keys = {};
     this.mouseTarget = null;
+    this.dpadUIButtons = {
+      ArrowUp: false,
+      ArrowDown: false,
+      ArrowLeft: false,
+      ArrowRight: false
+    };
     
     // On-screen cabinet references
     this.staticLayer = document.getElementById('power-static');
@@ -118,7 +124,35 @@ class GameEngine {
     const scanlineToggle = document.getElementById('scanline-toggle');
     const musicToggle = document.getElementById('music-toggle');
     const sfxToggle = document.getElementById('sfx-toggle');
+    const bgmVolumeSlider = document.getElementById('bgm-volume-slider');
+    const sfxVolumeSlider = document.getElementById('sfx-volume-slider');
+    const bgmVolumeValue = document.getElementById('bgm-volume-value');
+    const sfxVolumeValue = document.getElementById('sfx-volume-value');
     const scanlinesLayer = document.getElementById('scanlines-layer');
+
+    const updateVolumeLabel = (el, percent) => {
+      if (el) el.textContent = `${percent}%`;
+    };
+
+    if (bgmVolumeSlider) {
+      bgmVolumeSlider.value = audio.bgmVolumePercent;
+      updateVolumeLabel(bgmVolumeValue, audio.bgmVolumePercent);
+      bgmVolumeSlider.addEventListener('input', (e) => {
+        const percent = parseInt(e.target.value, 10);
+        audio.setBgmVolume(percent);
+        updateVolumeLabel(bgmVolumeValue, percent);
+      });
+    }
+
+    if (sfxVolumeSlider) {
+      sfxVolumeSlider.value = audio.sfxVolumePercent;
+      updateVolumeLabel(sfxVolumeValue, audio.sfxVolumePercent);
+      sfxVolumeSlider.addEventListener('input', (e) => {
+        const percent = parseInt(e.target.value, 10);
+        audio.setSfxVolume(percent);
+        updateVolumeLabel(sfxVolumeValue, percent);
+      });
+    }
 
     scanlineToggle.addEventListener('change', (e) => {
       scanlinesLayer.style.opacity = e.target.checked ? '1' : '0';
@@ -188,6 +222,7 @@ class GameEngine {
         const handleStart = (e) => {
           e.preventDefault();
           this.keys[key] = true;
+          this.dpadUIButtons[key] = true;
           btn.classList.add('active');
           audio.init();
           audio.resume();
@@ -195,6 +230,7 @@ class GameEngine {
         const handleEnd = (e) => {
           e.preventDefault();
           this.keys[key] = false;
+          this.dpadUIButtons[key] = false;
           btn.classList.remove('active');
         };
 
@@ -583,21 +619,18 @@ class GameEngine {
     this.ctx.restore();
   }
 
+  isDpadUIAiming() {
+    return Object.values(this.dpadUIButtons).some(Boolean);
+  }
+
   drawTargetCursor() {
     // Only draw cursor when chameleon is idle (not shooting or retracting)
     if (this.chameleon.tongueState !== 'idle') return;
+    // Show targeting cursor only while using on-screen D-pad UI
+    if (!this.isDpadUIAiming()) return;
 
-    let tx, ty;
-    
-    if (this.mouseTarget) {
-      // Aiming with mouse/touch directly on canvas
-      tx = this.mouseTarget.x;
-      ty = this.mouseTarget.y;
-    } else {
-      // Aiming with keyboard or virtual joystick: target point is along the chameleon's angle at max tongue length
-      tx = this.chameleon.pivotX + Math.cos(this.chameleon.angle) * this.chameleon.tongueMaxLen;
-      ty = this.chameleon.pivotY + Math.sin(this.chameleon.angle) * this.chameleon.tongueMaxLen;
-    }
+    const tx = this.chameleon.pivotX + Math.cos(this.chameleon.angle) * this.chameleon.tongueMaxLen;
+    const ty = this.chameleon.pivotY + Math.sin(this.chameleon.angle) * this.chameleon.tongueMaxLen;
     
     // Draw a beautiful retro neon-pink target crosshair
     this.ctx.save();
