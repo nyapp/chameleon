@@ -98,6 +98,11 @@ class GameEngine {
       else if (e.code === 'Space') {
         this.triggerShoot();
       }
+      else if (e.code === 'Escape') {
+        if (this.state === 'PLAYING' || this.state === 'PAUSED') {
+          this.toggleSettingsMenu();
+        }
+      }
       
       // Update D-pad visual state
       this.updateDpadCSS();
@@ -239,13 +244,13 @@ class GameEngine {
       el.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
     };
 
-    // touchstart / mousedown のみ（iOS の ghost click 回避）
+    // touchend + click（端末差を吸収、二重発火は debounce）
     const bindTap = (el, handler) => {
       if (!el) return;
       let lastTapAt = 0;
       const run = (e) => {
         const now = Date.now();
-        if (now - lastTapAt < 450) {
+        if (now - lastTapAt < 400) {
           e.preventDefault();
           e.stopPropagation();
           return;
@@ -255,8 +260,8 @@ class GameEngine {
         e.stopPropagation();
         handler(e);
       };
-      el.addEventListener('touchstart', run, { passive: false });
-      el.addEventListener('mousedown', run);
+      el.addEventListener('touchend', run, { passive: false });
+      el.addEventListener('click', run);
       blockTouchScroll(el);
     };
 
@@ -500,12 +505,35 @@ class GameEngine {
     }, 300);
   }
 
+  isSettingsMenuVisible() {
+    return document.getElementById('settings-modal')?.classList.contains('show') ?? false;
+  }
+
   isGameFrozen() {
-    return this.frozenByMenu;
+    return this.frozenByMenu || this.isSettingsMenuVisible();
+  }
+
+  /** 毎フレーム DOM/フラグを同期し、ポーズ中は必ずシミュレーション停止 */
+  syncPauseFromDom() {
+    const shouldFreeze = this.frozenByMenu || this.isSettingsMenuVisible();
+    if (!shouldFreeze) {
+      return false;
+    }
+    if (!this.frozenByMenu) {
+      this.frozenByMenu = true;
+    }
+    this.applyPausePresentation(true);
+    if (this.state === 'PLAYING') {
+      this.pauseGame();
+    }
+    return true;
   }
 
   applyPausePresentation(paused) {
     document.querySelector('.arcade-cabinet')?.classList.toggle('game-paused', paused);
+    if (this.canvas) {
+      this.canvas.style.pointerEvents = paused ? 'none' : '';
+    }
   }
 
   pauseGame() {
@@ -538,16 +566,15 @@ class GameEngine {
   openSettingsMenu() {
     const settingsModal = document.getElementById('settings-modal');
     const settingsBackdrop = document.getElementById('settings-backdrop');
-    if (!settingsModal || this.frozenByMenu) return;
+    if (!settingsModal || this.isSettingsMenuVisible()) return;
 
     this.frozenByMenu = true;
-    settingsModal.classList.add('show');
-    if (settingsBackdrop) settingsBackdrop.hidden = false;
     this.applyPausePresentation(true);
-
     if (this.state === 'PLAYING') {
       this.pauseGame();
     }
+    settingsModal.classList.add('show');
+    if (settingsBackdrop) settingsBackdrop.hidden = false;
   }
 
   closeSettingsMenu() {
@@ -568,7 +595,7 @@ class GameEngine {
   }
 
   toggleSettingsMenu() {
-    if (this.frozenByMenu) {
+    if (this.isSettingsMenuVisible() || this.frozenByMenu) {
       this.closeSettingsMenu();
       return;
     }
@@ -583,8 +610,7 @@ class GameEngine {
       return;
     }
 
-    if (this.frozenByMenu) {
-      if (this.state === 'PLAYING') this.pauseGame();
+    if (this.syncPauseFromDom()) {
       this.draw();
       requestAnimationFrame((t) => this.loop(t));
       return;
@@ -623,8 +649,7 @@ class GameEngine {
   }
 
   update() {
-    if (this.frozenByMenu) {
-      if (this.state === 'PLAYING') this.pauseGame();
+    if (this.syncPauseFromDom()) {
       return;
     }
 

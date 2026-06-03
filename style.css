@@ -30,7 +30,6 @@
 #game-canvas,
 .gb-dpad-btn,
 .gb-action-btn,
-.gb-menu-control,
 .info-toggle-btn,
 .cabinet-marquee {
   -webkit-touch-callout: none;
@@ -549,6 +548,8 @@ html.perf-lite .glow-text {
   align-items: flex-end;
   justify-self: center;
   align-self: end;
+  position: relative;
+  z-index: 25;
 }
 
 .gb-menu-control {
@@ -1243,6 +1244,8 @@ html.perf-lite .glow-text {
   .gb-dpad-container {
     pointer-events: auto;
     width: auto;
+    position: relative;
+    z-index: 25;
   }
 
   .gb-dpad {
@@ -1253,6 +1256,8 @@ html.perf-lite .glow-text {
   /* Right side Action buttons pointer-events auto */
   .gb-action-buttons {
     pointer-events: auto;
+    position: relative;
+    z-index: 25;
     margin-left: 0;
     transform: rotate(0deg); /* align straight in landscape overlay for comfort */
     padding: 12px 16px;
