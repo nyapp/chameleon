@@ -305,6 +305,13 @@ body {
   100% { opacity: 0.98; }
 }
 
+/* Pause: stop decorative CRT / marquee motion */
+.game-paused .screen-flicker,
+.game-paused .cabinet-marquee::after,
+.game-paused .glow-text {
+  animation-play-state: paused !important;
+}
+
 /* CRT Turn On/Off static overlay */
 .screen-static {
   position: absolute;
@@ -528,6 +535,8 @@ body {
   align-items: flex-end;
   justify-self: center;
   align-self: end;
+  cursor: pointer;
+  padding: 4px 8px;
 }
 
 .gb-sys-btn-wrapper {
@@ -567,6 +576,7 @@ body {
   letter-spacing: 0.5px;
   text-shadow: 1px 1px 0px rgba(0,0,0,0.3);
   transform: rotate(-5deg);
+  pointer-events: none;
 }
 
 /* Action Button: A */

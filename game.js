@@ -13,6 +13,8 @@ class GameEngine {
     
     // Game States: 'TITLE', 'PLAYING', 'GAMEOVER', 'PAUSED'
     this.state = 'TITLE';
+    this.frozenByMenu = false;
+    this.bgmPausedByMenu = false;
     
     this.score = 0;
     this.fliesEaten = 0;
@@ -67,6 +69,8 @@ class GameEngine {
   initEventListeners() {
     // Keyboard inputs
     window.addEventListener('keydown', (e) => {
+      if (this.state === 'PAUSED') return;
+
       this.keys[e.code] = true;
 
       // Space scrolls the page by default; keep it for gameplay only
@@ -100,6 +104,7 @@ class GameEngine {
 
     // Mouse/Touch controls inside Canvas
     this.canvas.addEventListener('mousemove', (e) => {
+      if (this.state !== 'PLAYING') return;
       const rect = this.canvas.getBoundingClientRect();
       // Translate to 256x240 coordinates
       const scaleX = this.width / rect.width;
@@ -122,7 +127,7 @@ class GameEngine {
         this.startGame();
       } else if (this.state === 'GAMEOVER') {
         this.resetGame();
-      } else {
+      } else if (this.state === 'PLAYING') {
         this.triggerShoot();
       }
     });
@@ -197,7 +202,7 @@ class GameEngine {
         this.startGame();
       } else if (this.state === 'GAMEOVER') {
         this.resetGame();
-      } else {
+      } else if (this.state === 'PLAYING') {
         handleTouchAim(e);
         this.triggerShoot();
       }
@@ -228,11 +233,32 @@ class GameEngine {
       el.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
     };
 
+    // pointerdown + click（端末差を吸収、400ms 以内の二重発火は無視）
+    const bindTap = (el, handler) => {
+      if (!el) return;
+      let lastTapAt = 0;
+      const run = (e) => {
+        const now = Date.now();
+        if (now - lastTapAt < 400) return;
+        lastTapAt = now;
+        e.preventDefault();
+        e.stopPropagation();
+        handler(e);
+      };
+      el.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        run(e);
+      });
+      el.addEventListener('click', run);
+      blockTouchScroll(el);
+    };
+
     Object.entries(dpadButtons).forEach(([id, key]) => {
       const btn = document.getElementById(id);
       if (btn) {
         const handleStart = (e) => {
           e.preventDefault();
+          if (this.state === 'PAUSED') return;
           this.keys[key] = true;
           this.dpadUIButtons[key] = true;
           btn.classList.add('active');
@@ -272,7 +298,7 @@ class GameEngine {
             this.startGame();
           } else if (this.state === 'GAMEOVER') {
             this.resetGame();
-          } else {
+          } else if (this.state === 'PLAYING') {
             this.triggerShoot();
           }
           
@@ -287,33 +313,26 @@ class GameEngine {
 
     // Game Boy MENU button
     const menuBtn = document.getElementById('gb-menu-btn');
+    const menuArea = document.querySelector('.gb-system-buttons');
     const settingsModal = document.getElementById('settings-modal');
     const instructionsModal = document.getElementById('instructions-modal');
     const settingsCloseBtn = document.getElementById('settings-close-btn');
     const infoCloseBtn = document.getElementById('info-close-btn');
 
-    if (menuBtn && settingsModal) {
-      const toggleSettings = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        settingsModal.classList.toggle('show');
-        menuBtn.classList.add('active');
-        setTimeout(() => menuBtn.classList.remove('active'), 120);
+    if (menuArea && settingsModal) {
+      bindTap(menuArea, () => {
+        this.setSettingsMenuOpen(!settingsModal.classList.contains('show'));
+        menuBtn?.classList.add('active');
+        setTimeout(() => menuBtn?.classList.remove('active'), 120);
         audio.init();
         audio.resume();
-      };
-      menuBtn.addEventListener('click', toggleSettings);
-      menuBtn.addEventListener('touchstart', toggleSettings, { passive: false });
-      blockTouchScroll(menuBtn);
+      });
     }
 
     if (settingsCloseBtn && settingsModal) {
-      const closeSettings = (e) => {
-        e.preventDefault();
-        settingsModal.classList.remove('show');
-      };
-      settingsCloseBtn.addEventListener('click', closeSettings);
-      settingsCloseBtn.addEventListener('touchstart', closeSettings, { passive: false });
+      bindTap(settingsCloseBtn, () => {
+        this.setSettingsMenuOpen(false);
+      });
     }
 
     if (infoCloseBtn && instructionsModal) {
@@ -339,24 +358,15 @@ class GameEngine {
     }
     blockTouchScroll(infoToggleBtn);
 
-    // Close modals on window click/touchstart if clicking outside
-    window.addEventListener('click', (e) => {
-      if (instructionsModal && instructionsModal.classList.contains('show') && !instructionsModal.contains(e.target) && e.target !== infoToggleBtn) {
+    // Close modals when clicking outside
+    window.addEventListener('pointerdown', (e) => {
+      if (instructionsModal && instructionsModal.classList.contains('show') && !instructionsModal.contains(e.target) && !infoToggleBtn?.contains(e.target)) {
         instructionsModal.classList.remove('show');
       }
-      if (settingsModal && settingsModal.classList.contains('show') && !settingsModal.contains(e.target) && e.target !== menuBtn) {
-        settingsModal.classList.remove('show');
+      if (settingsModal && settingsModal.classList.contains('show') && !settingsModal.contains(e.target) && !e.target.closest('.gb-system-buttons')) {
+        this.setSettingsMenuOpen(false);
       }
     });
-
-    window.addEventListener('touchstart', (e) => {
-      if (instructionsModal && instructionsModal.classList.contains('show') && !instructionsModal.contains(e.target) && e.target !== infoToggleBtn) {
-        instructionsModal.classList.remove('show');
-      }
-      if (settingsModal && settingsModal.classList.contains('show') && !settingsModal.contains(e.target) && e.target !== menuBtn) {
-        settingsModal.classList.remove('show');
-      }
-    }, { passive: true });
 
     const gameCabinet = document.querySelector('.arcade-cabinet');
     if (gameCabinet) {
@@ -454,6 +464,59 @@ class GameEngine {
     }, 300);
   }
 
+  isGameFrozen() {
+    return this.frozenByMenu || this.isSettingsMenuOpen();
+  }
+
+  applyPausePresentation(paused) {
+    document.querySelector('.arcade-cabinet')?.classList.toggle('game-paused', paused);
+  }
+
+  pauseGame() {
+    if (this.state !== 'PLAYING') return;
+    this.state = 'PAUSED';
+    this.keys = {};
+    this.mouseTarget = null;
+    Object.keys(this.dpadUIButtons).forEach((key) => {
+      this.dpadUIButtons[key] = false;
+    });
+    this.updateDpadCSS();
+
+    const musicToggle = document.getElementById('music-toggle');
+    if (musicToggle?.checked && audio.isBgmPlaying) {
+      this.bgmPausedByMenu = true;
+      audio.stopBGM();
+    }
+  }
+
+  resumeGame() {
+    if (this.state !== 'PAUSED') return;
+    this.state = 'PLAYING';
+
+    if (this.bgmPausedByMenu) {
+      this.bgmPausedByMenu = false;
+      audio.startBGM();
+    }
+  }
+
+  isSettingsMenuOpen() {
+    return document.getElementById('settings-modal')?.classList.contains('show') ?? false;
+  }
+
+  setSettingsMenuOpen(open) {
+    const settingsModal = document.getElementById('settings-modal');
+    if (!settingsModal) return;
+    const wasOpen = settingsModal.classList.contains('show');
+    if (open === wasOpen) return;
+
+    this.frozenByMenu = open;
+    settingsModal.classList.toggle('show', open);
+    this.applyPausePresentation(open);
+
+    if (open) this.pauseGame();
+    else this.resumeGame();
+  }
+
   // --- CORE GAME LOOP ---
 
   loop(timestamp) {
@@ -479,6 +542,11 @@ class GameEngine {
   }
 
   update() {
+    if (this.isGameFrozen()) {
+      if (this.state === 'PLAYING') this.pauseGame();
+      return;
+    }
+
     this.tickScreenShake();
 
     if (this.state !== 'PLAYING') {
@@ -643,7 +711,7 @@ class GameEngine {
     
     // Apply screen shake (PLAYING 中、または GAMEOVER 直後 1 秒間のみ)
     const canShake = this.screenShake > 0 && (
-      this.state === 'PLAYING' || this.gameOverShakeFrames > 0
+      this.state === 'PLAYING' || this.state === 'PAUSED' || this.gameOverShakeFrames > 0
     );
     if (canShake) {
       const dx = (Math.random() - 0.5) * this.screenShake;
@@ -674,9 +742,22 @@ class GameEngine {
       this.drawTitleScreen();
     } else if (this.state === 'GAMEOVER') {
       this.drawGameOverScreen();
+    } else if (this.isGameFrozen()) {
+      this.drawPausedOverlay();
     }
     
     this.ctx.restore();
+  }
+
+  drawPausedOverlay() {
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    this.ctx.fillRect(0, 0, this.width, this.height);
+
+    this.ctx.font = '10px "Press Start 2P", monospace';
+    this.ctx.fillStyle = '#00f0ff';
+    this.ctx.textAlign = 'center';
+    this.ctx.fillText('PAUSED', this.width / 2, this.height / 2);
+    this.ctx.textAlign = 'left';
   }
 
   isDpadUIAiming() {
@@ -777,11 +858,13 @@ class GameEngine {
     this.ctx.fill();
     
     // Draw little pixelated clouds or neon star sparks in sky
-    ctxFlicker(this.ctx);
+    if (!this.isGameFrozen()) {
+      ctxFlicker(this.ctx);
+    }
   }
 
   drawHUD() {
-    const isPlaying = this.state === 'PLAYING';
+    const isPlaying = this.state === 'PLAYING' || this.state === 'PAUSED';
     
     // Top Score Bar (Monospace alignment)
     this.ctx.font = '7px "Press Start 2P", monospace';
@@ -850,9 +933,11 @@ class GameEngine {
 
       let fillStyle = '#39ff14';
       const isLowHunger = this.energy < 30;
-      if (isLowHunger) {
+      if (isLowHunger && !this.isGameFrozen()) {
         const barPulse = Math.sin(Date.now() * 0.012) > 0;
         fillStyle = barPulse ? '#ff3b30' : '#ff6b60';
+      } else if (isLowHunger) {
+        fillStyle = '#ff3b30';
       } else if (this.energy < 60) {
         fillStyle = '#ffea00';
       }
@@ -889,7 +974,7 @@ class GameEngine {
   }
 
   drawLowHungerWarning() {
-    if (this.state !== 'PLAYING' || this.energy >= 30) return;
+    if (this.isGameFrozen() || this.state !== 'PLAYING' || this.energy >= 30) return;
 
     const ctx = this.ctx;
     const w = this.width;
