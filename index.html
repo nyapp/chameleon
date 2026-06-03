@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEO CHAMELEON | Retro-Futuristic Arcade</title>
+  <!-- Retro Monospace Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="cabinet-outer">
+    <div class="arcade-cabinet">
+      <!-- Cabinet Header -->
+      <div class="cabinet-marquee">
+        <h1 class="glow-text">NEO CHAMELEON</h1>
+        <div class="marquee-sub">8-BIT RETRO SYNTH</div>
+      </div>
+
+      <!-- Main CRT Monitor Container -->
+      <div class="screen-outer">
+        <div class="screen-bezel">
+          <!-- Ambient reflections & highlights on bezel -->
+          <div class="bezel-highlight-top"></div>
+          <div class="bezel-highlight-bottom"></div>
+          
+          <div class="crt-container" id="crt-screen">
+            <!-- Curvature Reflection Overlay -->
+            <div class="screen-glass-curve"></div>
+            <!-- CRT Scanlines Overlay -->
+            <div class="scanlines" id="scanlines-layer"></div>
+            <!-- Screen Flicker and Glow Overlay -->
+            <div class="screen-flicker"></div>
+            <div class="screen-vignette"></div>
+
+            <!-- Canvas Element -->
+            <canvas id="game-canvas" width="256" height="240"></canvas>
+            
+            <!-- Turn on/off overlay simulation -->
+            <div class="screen-static" id="power-static"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Control Panel -->
+      <div class="control-panel">
+        <div class="panel-section control-switches">
+          <div class="switch-container">
+            <span class="switch-label">CRT SCAN</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="scanline-toggle" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="switch-container">
+            <span class="switch-label">BGM</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="music-toggle" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="switch-container">
+            <span class="switch-label">SFX</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="sfx-toggle" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="panel-section cabinet-dpad">
+          <div class="joystick-base">
+            <div class="joystick-shaft" id="cabinet-joystick">
+              <div class="joystick-ball"></div>
+            </div>
+          </div>
+          <div class="action-btn-container">
+            <button class="arcade-action-btn red-glow" id="cabinet-shoot-btn">
+              <span>FIRE</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="panel-section branding">
+          <div class="insert-coin-slot">
+            <div class="coin-led active"></div>
+            <span class="coin-text">INSERT COIN</span>
+          </div>
+          <div class="nes-logo">
+            <span class="red-dot">●</span> 8-BIT SYSTEM
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Instruction Panels / Side HUD -->
+  <div class="instructions-panel">
+    <h3>CONTROLS</h3>
+    <ul>
+      <li><span class="key">▲</span><span class="key">▼</span> / <span class="key">W</span><span class="key">S</span> : 角度調整</li>
+      <li><span class="key">SPACE</span> / <span class="key">CLICK</span> : 舌を伸ばす</li>
+      <li>クリックした位置を直接狙うことも可能です！</li>
+    </ul>
+    <div class="bug-legend">
+      <h4>BUGS INFO</h4>
+      <div class="legend-item"><span class="legend-dot common-fly"></span> 普通のハエ: 100点</div>
+      <div class="legend-item"><span class="legend-dot gnat-fly"></span> 金の羽虫: 300点 (高速)</div>
+      <div class="legend-item"><span class="legend-dot fire-fly"></span> ホタル: 200点 + パワーアップ</div>
+      <div class="legend-item"><span class="legend-dot wasp-fly"></span> 毒ハチ: -200点 & 体力減少</div>
+    </div>
+  </div>
+
+  <!-- Game Scripts -->
+  <script src="audio.js"></script>
+  <script src="chameleon.js"></script>
+  <script src="bugs.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

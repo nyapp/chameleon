@@ -1,0 +1,13 @@
+{
+  "name": "neo-chameleon",
+  "version": "1.0.0",
+  "description": "8-bit Retro-Futuristic Chameleon game",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx http-server -p 3000"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
