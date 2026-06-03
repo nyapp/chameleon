@@ -43,8 +43,6 @@ class GameEngine {
     this.mouseTarget = null;
     
     // On-screen cabinet references
-    this.joystick = document.getElementById('cabinet-joystick');
-    this.shootButton = document.getElementById('cabinet-shoot-btn');
     this.staticLayer = document.getElementById('power-static');
     
     this.initEventListeners();
@@ -78,13 +76,13 @@ class GameEngine {
         this.triggerShoot();
       }
       
-      // Update Joystick visual state on cabinet
-      this.updateJoystickCSS();
+      // Update D-pad visual state
+      this.updateDpadCSS();
     });
 
     window.addEventListener('keyup', (e) => {
       this.keys[e.code] = false;
-      this.updateJoystickCSS();
+      this.updateDpadCSS();
     });
 
     // Mouse/Touch controls inside Canvas
@@ -134,15 +132,6 @@ class GameEngine {
       audio.setSfxEnabled(e.target.checked);
     });
 
-    // Virtual cabinet buttons
-    this.shootButton.addEventListener('mousedown', () => {
-      audio.init();
-      audio.resume();
-      if (this.state === 'TITLE') this.startGame();
-      else if (this.state === 'GAMEOVER') this.resetGame();
-      else this.triggerShoot();
-    });
-
     // Touch Support for Canvas
     const handleTouchAim = (e) => {
       if (e.touches.length > 0) {
@@ -185,104 +174,136 @@ class GameEngine {
       this.mouseTarget = null;
     }, { passive: false });
 
-    // Touch Support for Virtual Joystick
-    const joystickBase = document.querySelector('.joystick-base');
-    let joystickActive = false;
+    // Game Boy D-Pad buttons touch/mouse interaction
+    const dpadButtons = {
+      'gb-dpad-up': 'ArrowUp',
+      'gb-dpad-down': 'ArrowDown',
+      'gb-dpad-left': 'ArrowLeft',
+      'gb-dpad-right': 'ArrowRight'
+    };
 
-    if (joystickBase) {
-      joystickBase.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        joystickActive = true;
-        audio.init();
-        audio.resume();
-      }, { passive: false });
+    Object.entries(dpadButtons).forEach(([id, key]) => {
+      const btn = document.getElementById(id);
+      if (btn) {
+        const handleStart = (e) => {
+          e.preventDefault();
+          this.keys[key] = true;
+          btn.classList.add('active');
+          audio.init();
+          audio.resume();
+        };
+        const handleEnd = (e) => {
+          e.preventDefault();
+          this.keys[key] = false;
+          btn.classList.remove('active');
+        };
 
-      joystickBase.addEventListener('touchmove', (e) => {
-        e.preventDefault();
-        if (!joystickActive) return;
+        btn.addEventListener('mousedown', handleStart);
+        btn.addEventListener('touchstart', handleStart, { passive: false });
+        
+        btn.addEventListener('mouseup', handleEnd);
+        btn.addEventListener('mouseleave', handleEnd);
+        btn.addEventListener('touchend', handleEnd, { passive: false });
+      }
+    });
 
-        const rect = joystickBase.getBoundingClientRect();
-        const centerY = rect.top + rect.height / 2;
-        const touchY = e.touches[0].clientY;
-        const dy = touchY - centerY;
+    // Game Boy Action buttons (A & B)
+    const actionBtns = ['gb-btn-a', 'gb-btn-b'];
+    actionBtns.forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) {
+        const handleAction = (e) => {
+          e.preventDefault();
+          btn.classList.add('active');
+          audio.init();
+          audio.resume();
+          
+          if (this.state === 'TITLE') {
+            this.startGame();
+          } else if (this.state === 'GAMEOVER') {
+            this.resetGame();
+          } else {
+            this.triggerShoot();
+          }
+          
+          setTimeout(() => btn.classList.remove('active'), 100);
+        };
+        
+        btn.addEventListener('mousedown', handleAction);
+        btn.addEventListener('touchstart', handleAction, { passive: false });
+      }
+    });
 
-        this.joystick.className = 'joystick-shaft';
-
-        if (dy < -10) {
-          this.keys['ArrowUp'] = true;
-          this.keys['ArrowDown'] = false;
-          this.joystick.classList.add('up');
-        } else if (dy > 10) {
-          this.keys['ArrowDown'] = true;
-          this.keys['ArrowUp'] = false;
-          this.joystick.classList.add('down');
-        } else {
-          this.keys['ArrowUp'] = false;
-          this.keys['ArrowDown'] = false;
-        }
-      }, { passive: false });
-
-      joystickBase.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        joystickActive = false;
-        this.keys['ArrowUp'] = false;
-        this.keys['ArrowDown'] = false;
-        this.joystick.className = 'joystick-shaft';
-      }, { passive: false });
-    }
-
-    // Touch Support for Virtual Fire Button
-    if (this.shootButton) {
-      this.shootButton.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        audio.init();
-        audio.resume();
-        if (this.state === 'TITLE') this.startGame();
-        else if (this.state === 'GAMEOVER') this.resetGame();
-        else this.triggerShoot();
-      }, { passive: false });
-    }
-
-    // Help Modal elements
-    const infoToggleBtn = document.getElementById('info-toggle-btn');
-    const infoCloseBtn = document.getElementById('info-close-btn');
+    // Game Boy SELECT & START buttons
+    const selectBtn = document.getElementById('gb-select-btn');
+    const startBtn = document.getElementById('gb-start-btn');
+    const settingsModal = document.getElementById('settings-modal');
     const instructionsModal = document.getElementById('instructions-modal');
+    const settingsCloseBtn = document.getElementById('settings-close-btn');
+    const infoCloseBtn = document.getElementById('info-close-btn');
 
-    if (infoToggleBtn && instructionsModal) {
-      const toggleHandler = (e) => {
+    if (selectBtn && settingsModal) {
+      const toggleSettings = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        settingsModal.classList.toggle('show');
+        selectBtn.classList.add('active');
+        setTimeout(() => selectBtn.classList.remove('active'), 120);
+        audio.init();
+        audio.resume();
+      };
+      selectBtn.addEventListener('click', toggleSettings);
+      selectBtn.addEventListener('touchstart', toggleSettings, { passive: false });
+    }
+
+    if (settingsCloseBtn && settingsModal) {
+      const closeSettings = (e) => {
+        e.preventDefault();
+        settingsModal.classList.remove('show');
+      };
+      settingsCloseBtn.addEventListener('click', closeSettings);
+      settingsCloseBtn.addEventListener('touchstart', closeSettings, { passive: false });
+    }
+
+    if (startBtn && instructionsModal) {
+      const toggleInstructions = (e) => {
         e.preventDefault();
         e.stopPropagation();
         instructionsModal.classList.toggle('show');
+        startBtn.classList.add('active');
+        setTimeout(() => startBtn.classList.remove('active'), 120);
         audio.init();
         audio.resume();
       };
-      infoToggleBtn.addEventListener('click', toggleHandler);
-      infoToggleBtn.addEventListener('touchstart', toggleHandler, { passive: false });
+      startBtn.addEventListener('click', toggleInstructions);
+      startBtn.addEventListener('touchstart', toggleInstructions, { passive: false });
     }
 
     if (infoCloseBtn && instructionsModal) {
-      const closeHandler = (e) => {
+      const closeInstructions = (e) => {
         e.preventDefault();
-        e.stopPropagation();
         instructionsModal.classList.remove('show');
       };
-      infoCloseBtn.addEventListener('click', closeHandler);
-      infoCloseBtn.addEventListener('touchstart', closeHandler, { passive: false });
+      infoCloseBtn.addEventListener('click', closeInstructions);
+      infoCloseBtn.addEventListener('touchstart', closeInstructions, { passive: false });
     }
 
+    // Close modals on window click/touchstart if clicking outside
     window.addEventListener('click', (e) => {
-      if (instructionsModal && instructionsModal.classList.contains('show')) {
-        if (!instructionsModal.contains(e.target) && e.target !== infoToggleBtn) {
-          instructionsModal.classList.remove('show');
-        }
+      if (instructionsModal && instructionsModal.classList.contains('show') && !instructionsModal.contains(e.target) && e.target !== startBtn) {
+        instructionsModal.classList.remove('show');
+      }
+      if (settingsModal && settingsModal.classList.contains('show') && !settingsModal.contains(e.target) && e.target !== selectBtn) {
+        settingsModal.classList.remove('show');
       }
     });
 
     window.addEventListener('touchstart', (e) => {
-      if (instructionsModal && instructionsModal.classList.contains('show')) {
-        if (!instructionsModal.contains(e.target) && e.target !== infoToggleBtn) {
-          instructionsModal.classList.remove('show');
-        }
+      if (instructionsModal && instructionsModal.classList.contains('show') && !instructionsModal.contains(e.target) && e.target !== startBtn) {
+        instructionsModal.classList.remove('show');
+      }
+      if (settingsModal && settingsModal.classList.contains('show') && !settingsModal.contains(e.target) && e.target !== selectBtn) {
+        settingsModal.classList.remove('show');
       }
     }, { passive: true });
   }
@@ -294,12 +315,27 @@ class GameEngine {
     }, 400);
   }
 
-  updateJoystickCSS() {
-    this.joystick.className = 'joystick-shaft';
-    if (this.keys['ArrowUp'] || this.keys['KeyW']) {
-      this.joystick.classList.add('up');
-    } else if (this.keys['ArrowDown'] || this.keys['KeyS']) {
-      this.joystick.classList.add('down');
+  updateDpadCSS() {
+    const upBtn = document.getElementById('gb-dpad-up');
+    const downBtn = document.getElementById('gb-dpad-down');
+    const leftBtn = document.getElementById('gb-dpad-left');
+    const rightBtn = document.getElementById('gb-dpad-right');
+
+    if (upBtn) {
+      if (this.keys['ArrowUp'] || this.keys['KeyW']) upBtn.classList.add('active');
+      else upBtn.classList.remove('active');
+    }
+    if (downBtn) {
+      if (this.keys['ArrowDown'] || this.keys['KeyS']) downBtn.classList.add('active');
+      else downBtn.classList.remove('active');
+    }
+    if (leftBtn) {
+      if (this.keys['ArrowLeft'] || this.keys['KeyA']) leftBtn.classList.add('active');
+      else leftBtn.classList.remove('active');
+    }
+    if (rightBtn) {
+      if (this.keys['ArrowRight'] || this.keys['KeyD']) rightBtn.classList.add('active');
+      else rightBtn.classList.remove('active');
     }
   }
 
@@ -309,9 +345,12 @@ class GameEngine {
     // Shoot sound and action
     if (this.chameleon.shoot()) {
       audio.playShoot();
-      // Cabinet fire button animation feedback
-      this.shootButton.classList.add('active');
-      setTimeout(() => this.shootButton.classList.remove('active'), 100);
+      // Game Boy button feedback
+      const btnA = document.getElementById('gb-btn-a');
+      if (btnA) {
+        btnA.classList.add('active');
+        setTimeout(() => btnA.classList.remove('active'), 100);
+      }
     }
   }
 
@@ -525,6 +564,11 @@ class GameEngine {
     // 2. Draw Entities
     this.chameleon.draw(this.ctx);
     this.bugs.forEach(bug => bug.draw(this.ctx));
+
+    // Draw Targeting Cursor
+    if (this.state === 'PLAYING') {
+      this.drawTargetCursor();
+    }
     
     // 3. Draw HUD & GUI
     this.drawHUD();
@@ -535,6 +579,65 @@ class GameEngine {
     } else if (this.state === 'GAMEOVER') {
       this.drawGameOverScreen();
     }
+    
+    this.ctx.restore();
+  }
+
+  drawTargetCursor() {
+    // Only draw cursor when chameleon is idle (not shooting or retracting)
+    if (this.chameleon.tongueState !== 'idle') return;
+
+    let tx, ty;
+    
+    if (this.mouseTarget) {
+      // Aiming with mouse/touch directly on canvas
+      tx = this.mouseTarget.x;
+      ty = this.mouseTarget.y;
+    } else {
+      // Aiming with keyboard or virtual joystick: target point is along the chameleon's angle at max tongue length
+      tx = this.chameleon.pivotX + Math.cos(this.chameleon.angle) * this.chameleon.tongueMaxLen;
+      ty = this.chameleon.pivotY + Math.sin(this.chameleon.angle) * this.chameleon.tongueMaxLen;
+    }
+    
+    // Draw a beautiful retro neon-pink target crosshair
+    this.ctx.save();
+    
+    // Set neon pink glow
+    this.ctx.shadowColor = '#ff007f';
+    this.ctx.shadowBlur = 4;
+    
+    this.ctx.strokeStyle = '#ff007f';
+    this.ctx.lineWidth = 1.5;
+    
+    // Draw a small target circle
+    this.ctx.beginPath();
+    this.ctx.arc(tx, ty, 5, 0, Math.PI * 2);
+    this.ctx.stroke();
+    
+    // Draw center dot
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.fillRect(Math.round(tx) - 1, Math.round(ty) - 1, 2, 2);
+    
+    // Draw crosshair ticks
+    this.ctx.beginPath();
+    // Top tick
+    this.ctx.moveTo(tx, ty - 8); this.ctx.lineTo(tx, ty - 5);
+    // Bottom tick
+    this.ctx.moveTo(tx, ty + 5); this.ctx.lineTo(tx, ty + 8);
+    // Left tick
+    this.ctx.moveTo(tx - 8, ty); this.ctx.lineTo(tx - 5, ty);
+    // Right tick
+    this.ctx.moveTo(tx + 5, ty); this.ctx.lineTo(tx + 8, ty);
+    this.ctx.stroke();
+    
+    // Draw a subtle dotted aiming line from chameleon's mouth to the target
+    this.ctx.strokeStyle = 'rgba(255, 0, 127, 0.25)';
+    this.ctx.lineWidth = 1;
+    this.ctx.setLineDash([2, 4]);
+    this.ctx.beginPath();
+    this.ctx.moveTo(this.chameleon.pivotX, this.chameleon.pivotY);
+    this.ctx.lineTo(tx, ty);
+    this.ctx.stroke();
     
     this.ctx.restore();
   }

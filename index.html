@@ -45,53 +45,54 @@
         </div>
       </div>
 
-      <!-- Control Panel -->
-      <div class="control-panel">
-        <div class="panel-section control-switches">
-          <div class="switch-container">
-            <span class="switch-label">CRT SCAN</span>
-            <label class="toggle-switch">
-              <input type="checkbox" id="scanline-toggle" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="switch-container">
-            <span class="switch-label">BGM</span>
-            <label class="toggle-switch">
-              <input type="checkbox" id="music-toggle" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="switch-container">
-            <span class="switch-label">SFX</span>
-            <label class="toggle-switch">
-              <input type="checkbox" id="sfx-toggle" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
+      <!-- Game Boy Control Panel -->
+      <div class="gameboy-panel">
+        <div class="gb-header">
+          <span class="gb-logo">GAME CHAMELEON</span>
+          <div class="gb-header-lines"><span></span><span></span></div>
         </div>
 
-        <div class="panel-section cabinet-dpad">
-          <div class="joystick-base">
-            <div class="joystick-shaft" id="cabinet-joystick">
-              <div class="joystick-ball"></div>
+        <div class="gb-controls-grid">
+          <!-- Left side: D-Pad -->
+          <div class="gb-dpad-container">
+            <div class="gb-dpad">
+              <button class="gb-dpad-btn up" id="gb-dpad-up" aria-label="Up"></button>
+              <button class="gb-dpad-btn right" id="gb-dpad-right" aria-label="Right"></button>
+              <button class="gb-dpad-btn down" id="gb-dpad-down" aria-label="Down"></button>
+              <button class="gb-dpad-btn left" id="gb-dpad-left" aria-label="Left"></button>
+              <div class="gb-dpad-center"></div>
             </div>
           </div>
-          <div class="action-btn-container">
-            <button class="arcade-action-btn red-glow" id="cabinet-shoot-btn">
-              <span>FIRE</span>
-            </button>
+
+          <!-- Center: System Buttons -->
+          <div class="gb-system-buttons">
+            <div class="gb-sys-btn-wrapper">
+              <button class="gb-sys-btn" id="gb-select-btn" aria-label="Select"></button>
+              <span class="gb-sys-label">SELECT</span>
+            </div>
+            <div class="gb-sys-btn-wrapper">
+              <button class="gb-sys-btn" id="gb-start-btn" aria-label="Start"></button>
+              <span class="gb-sys-label">START</span>
+            </div>
+          </div>
+
+          <!-- Right side: Action Buttons -->
+          <div class="gb-action-buttons">
+            <div class="gb-action-wrapper">
+              <button class="gb-action-btn button-b" id="gb-btn-b"><span>B</span></button>
+            </div>
+            <div class="gb-action-wrapper">
+              <button class="gb-action-btn button-a" id="gb-btn-a"><span>A</span></button>
+            </div>
           </div>
         </div>
 
-        <div class="panel-section branding">
-          <div class="insert-coin-slot">
-            <div class="coin-led active"></div>
-            <span class="coin-text">INSERT COIN</span>
-          </div>
-          <div class="nes-logo">
-            <span class="red-dot">●</span> 8-BIT SYSTEM
-          </div>
+        <!-- Bottom right speaker grill -->
+        <div class="gb-speaker">
+          <div class="speaker-grill"></div>
+          <div class="speaker-grill"></div>
+          <div class="speaker-grill"></div>
+          <div class="speaker-grill"></div>
         </div>
       </div>
     </div>
@@ -104,8 +105,8 @@
       <button class="modal-close-btn" id="info-close-btn">&times;</button>
     </div>
     <ul>
-      <li><span class="key">▲</span><span class="key">▼</span> / <span class="key">W</span><span class="key">S</span> : 角度調整</li>
-      <li><span class="key">SPACE</span> / <span class="key">CLICK</span> : 舌を伸ばす</li>
+      <li><span class="key">▲</span><span class="key">▼</span> / <span class="key">W</span><span class="key">S</span> : 角度調整 (十字キー上下)</li>
+      <li><span class="key">SPACE</span> / <span class="key">A / B ボタン</span> : 舌を伸ばす</li>
       <li>クリックした位置を直接狙うことも可能です！</li>
     </ul>
     <div class="bug-legend">
@@ -114,6 +115,37 @@
       <div class="legend-item"><span class="legend-dot gnat-fly"></span> 金の羽虫: 300点 (高速)</div>
       <div class="legend-item"><span class="legend-dot fire-fly"></span> ホタル: 200点 + パワーアップ</div>
       <div class="legend-item"><span class="legend-dot wasp-fly"></span> 毒ハチ: -200点 & 体力減少</div>
+    </div>
+  </div>
+
+  <!-- Settings Panel / Modal -->
+  <div class="instructions-panel" id="settings-modal">
+    <div class="instructions-header">
+      <h3>SETTINGS</h3>
+      <button class="modal-close-btn" id="settings-close-btn">&times;</button>
+    </div>
+    <div class="settings-content">
+      <div class="switch-container">
+        <span class="switch-label">CRT SCANLINES</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="scanline-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="switch-container">
+        <span class="switch-label">BGM MUSIC</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="music-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="switch-container">
+        <span class="switch-label">SFX SOUND</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="sfx-toggle" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
     </div>
   </div>
 

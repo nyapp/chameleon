@@ -273,6 +273,11 @@ class Chameleon {
     ctx.translate(this.pivotX, this.pivotY);
     ctx.rotate(this.angle);
 
+    // Draw Tongue (behind the head, inside the local head coordinates)
+    if (this.tongueState === 'shooting' || this.tongueState === 'retracting' || this.tongueState === 'swallowing') {
+      this.drawTongueLocal(ctx);
+    }
+
     // HEAD SHAPE (relative to its pivot 0,0)
     // Draw back of head, crown, jaw
     ctx.fillStyle = skinColor;
@@ -323,14 +328,9 @@ class Chameleon {
     ctx.fillRect(pupilX, pupilY, 2, 2);
 
     ctx.restore(); // Restore to clean state
-
-    // 4. Draw Tongue
-    if (this.tongueState === 'shooting' || this.tongueState === 'retracting' || this.tongueState === 'swallowing') {
-      this.drawTongue(ctx);
-    }
   }
 
-  drawTongue(ctx) {
+  drawTongueLocal(ctx) {
     const scale = this.pixelScale;
     
     // Choose tongue color (standard neon pink, or gold if powered up)
@@ -353,8 +353,8 @@ class Chameleon {
     ctx.lineCap = 'round';
     
     ctx.beginPath();
-    ctx.moveTo(this.pivotX, this.pivotY);
-    ctx.lineTo(this.tongueTipX, this.tongueTipY);
+    ctx.moveTo(0, 0); // start at pivot center in local coords
+    ctx.lineTo(this.tongueLen, 0); // end at tongue length on the rotated X-axis
     ctx.stroke();
 
     // Reset shadow blur so canvas drawing doesn't slow down
@@ -364,27 +364,27 @@ class Chameleon {
     ctx.strokeStyle = tongueTipColor;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(this.pivotX, this.pivotY);
-    ctx.lineTo(this.tongueTipX, this.tongueTipY);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(this.tongueLen, 0);
     ctx.stroke();
 
     // Draw the sticky tongue tip (a retro bulbous pixel circle)
     ctx.fillStyle = tongueColor;
-    ctx.fillRect(this.tongueTipX - 4, this.tongueTipY - 4, 8, 8);
+    ctx.fillRect(this.tongueLen - 4, -4, 8, 8);
     ctx.fillStyle = tongueTipColor;
-    ctx.fillRect(this.tongueTipX - 2, this.tongueTipY - 2, 4, 4);
+    ctx.fillRect(this.tongueLen - 2, -2, 4, 4);
 
     // If multi-tongue power-up is active, draw two extra smaller angled ghost tongues!
     if (this.powerUpActive === 'multi') {
-      const angles = [this.angle - 0.25, this.angle + 0.25];
+      const angles = [-0.25, 0.25];
       angles.forEach(ang => {
-        const sideTipX = this.pivotX + Math.cos(ang) * this.tongueLen;
-        const sideTipY = this.pivotY + Math.sin(ang) * this.tongueLen;
+        const sideTipX = Math.cos(ang) * this.tongueLen;
+        const sideTipY = Math.sin(ang) * this.tongueLen;
         
         ctx.strokeStyle = 'rgba(0, 240, 255, 0.8)';
         ctx.lineWidth = 4;
         ctx.beginPath();
-        ctx.moveTo(this.pivotX, this.pivotY);
+        ctx.moveTo(0, 0);
         ctx.lineTo(sideTipX, sideTipY);
         ctx.stroke();
         
