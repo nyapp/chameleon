@@ -612,6 +612,9 @@ class GameEngine {
     // 3. Draw HUD & GUI
     this.drawHUD();
     
+    // Low hunger screen-edge warning glow
+    this.drawLowHungerWarning();
+    
     // 4. Draw Overlays (Title, Game Over, Paused)
     if (this.state === 'TITLE') {
       this.drawTitleScreen();
@@ -796,8 +799,10 @@ class GameEngine {
       this.ctx.strokeRect(barX, barY, barW, barH);
 
       let fillStyle = '#39ff14';
-      if (this.energy < 30) {
-        fillStyle = '#ff3b30';
+      const isLowHunger = this.energy < 30;
+      if (isLowHunger) {
+        const barPulse = Math.sin(Date.now() * 0.012) > 0;
+        fillStyle = barPulse ? '#ff3b30' : '#ff6b60';
       } else if (this.energy < 60) {
         fillStyle = '#ffea00';
       }
@@ -831,6 +836,59 @@ class GameEngine {
         this.ctx.textAlign = 'left'; // reset
       }
     }
+  }
+
+  drawLowHungerWarning() {
+    if (this.state !== 'PLAYING' || this.energy >= 30) return;
+
+    const ctx = this.ctx;
+    const w = this.width;
+    const h = this.height;
+    const urgency = 1 - this.energy / 30;
+    const pulseSpeed = this.energy < 15 ? 0.014 : 0.008;
+    const pulse = 0.5 + 0.5 * Math.sin(Date.now() * pulseSpeed);
+    const alpha = (0.2 + urgency * 0.5) * pulse;
+    const edgeW = 24 + urgency * 24;
+    const edgeAlpha = alpha * 0.9;
+
+    ctx.save();
+
+    const cx = w / 2;
+    const cy = h / 2;
+    const innerR = Math.min(w, h) * 0.32;
+    const outerR = Math.hypot(cx, cy);
+    const vignette = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
+    vignette.addColorStop(0, 'rgba(255, 59, 48, 0)');
+    vignette.addColorStop(0.6, 'rgba(255, 59, 48, 0)');
+    vignette.addColorStop(1, `rgba(255, 59, 48, ${alpha})`);
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, w, h);
+
+    let grad = ctx.createLinearGradient(0, 0, 0, edgeW);
+    grad.addColorStop(0, `rgba(255, 59, 48, ${edgeAlpha})`);
+    grad.addColorStop(1, 'rgba(255, 59, 48, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, edgeW);
+
+    grad = ctx.createLinearGradient(0, h, 0, h - edgeW);
+    grad.addColorStop(0, `rgba(255, 59, 48, ${edgeAlpha})`);
+    grad.addColorStop(1, 'rgba(255, 59, 48, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, h - edgeW, w, edgeW);
+
+    grad = ctx.createLinearGradient(0, 0, edgeW, 0);
+    grad.addColorStop(0, `rgba(255, 59, 48, ${edgeAlpha})`);
+    grad.addColorStop(1, 'rgba(255, 59, 48, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, edgeW, h);
+
+    grad = ctx.createLinearGradient(w, 0, w - edgeW, 0);
+    grad.addColorStop(0, `rgba(255, 59, 48, ${edgeAlpha})`);
+    grad.addColorStop(1, 'rgba(255, 59, 48, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(w - edgeW, 0, edgeW, h);
+
+    ctx.restore();
   }
 
   drawTitleScreen() {
