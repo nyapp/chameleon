@@ -142,6 +142,149 @@ class GameEngine {
       else if (this.state === 'GAMEOVER') this.resetGame();
       else this.triggerShoot();
     });
+
+    // Touch Support for Canvas
+    const handleTouchAim = (e) => {
+      if (e.touches.length > 0) {
+        const touch = e.touches[0];
+        const rect = this.canvas.getBoundingClientRect();
+        const scaleX = this.width / rect.width;
+        const scaleY = this.height / rect.height;
+        this.mouseTarget = {
+          x: (touch.clientX - rect.left) * scaleX,
+          y: (touch.clientY - rect.top) * scaleY
+        };
+      }
+    };
+
+    this.canvas.addEventListener('touchstart', (e) => {
+      // Prevent scrolling when interacting with game canvas
+      e.preventDefault();
+      audio.init();
+      audio.resume();
+      
+      if (this.state === 'TITLE') {
+        this.startGame();
+      } else if (this.state === 'GAMEOVER') {
+        this.resetGame();
+      } else {
+        handleTouchAim(e);
+        this.triggerShoot();
+      }
+    }, { passive: false });
+
+    this.canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (this.state === 'PLAYING') {
+        handleTouchAim(e);
+      }
+    }, { passive: false });
+
+    this.canvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      this.mouseTarget = null;
+    }, { passive: false });
+
+    // Touch Support for Virtual Joystick
+    const joystickBase = document.querySelector('.joystick-base');
+    let joystickActive = false;
+
+    if (joystickBase) {
+      joystickBase.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        joystickActive = true;
+        audio.init();
+        audio.resume();
+      }, { passive: false });
+
+      joystickBase.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (!joystickActive) return;
+
+        const rect = joystickBase.getBoundingClientRect();
+        const centerY = rect.top + rect.height / 2;
+        const touchY = e.touches[0].clientY;
+        const dy = touchY - centerY;
+
+        this.joystick.className = 'joystick-shaft';
+
+        if (dy < -10) {
+          this.keys['ArrowUp'] = true;
+          this.keys['ArrowDown'] = false;
+          this.joystick.classList.add('up');
+        } else if (dy > 10) {
+          this.keys['ArrowDown'] = true;
+          this.keys['ArrowUp'] = false;
+          this.joystick.classList.add('down');
+        } else {
+          this.keys['ArrowUp'] = false;
+          this.keys['ArrowDown'] = false;
+        }
+      }, { passive: false });
+
+      joystickBase.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        joystickActive = false;
+        this.keys['ArrowUp'] = false;
+        this.keys['ArrowDown'] = false;
+        this.joystick.className = 'joystick-shaft';
+      }, { passive: false });
+    }
+
+    // Touch Support for Virtual Fire Button
+    if (this.shootButton) {
+      this.shootButton.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        audio.init();
+        audio.resume();
+        if (this.state === 'TITLE') this.startGame();
+        else if (this.state === 'GAMEOVER') this.resetGame();
+        else this.triggerShoot();
+      }, { passive: false });
+    }
+
+    // Help Modal elements
+    const infoToggleBtn = document.getElementById('info-toggle-btn');
+    const infoCloseBtn = document.getElementById('info-close-btn');
+    const instructionsModal = document.getElementById('instructions-modal');
+
+    if (infoToggleBtn && instructionsModal) {
+      const toggleHandler = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        instructionsModal.classList.toggle('show');
+        audio.init();
+        audio.resume();
+      };
+      infoToggleBtn.addEventListener('click', toggleHandler);
+      infoToggleBtn.addEventListener('touchstart', toggleHandler, { passive: false });
+    }
+
+    if (infoCloseBtn && instructionsModal) {
+      const closeHandler = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        instructionsModal.classList.remove('show');
+      };
+      infoCloseBtn.addEventListener('click', closeHandler);
+      infoCloseBtn.addEventListener('touchstart', closeHandler, { passive: false });
+    }
+
+    window.addEventListener('click', (e) => {
+      if (instructionsModal && instructionsModal.classList.contains('show')) {
+        if (!instructionsModal.contains(e.target) && e.target !== infoToggleBtn) {
+          instructionsModal.classList.remove('show');
+        }
+      }
+    });
+
+    window.addEventListener('touchstart', (e) => {
+      if (instructionsModal && instructionsModal.classList.contains('show')) {
+        if (!instructionsModal.contains(e.target) && e.target !== infoToggleBtn) {
+          instructionsModal.classList.remove('show');
+        }
+      }
+    }, { passive: true });
   }
 
   triggerBootSequence() {

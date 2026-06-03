@@ -17,6 +17,7 @@
       <div class="cabinet-marquee">
         <h1 class="glow-text">NEO CHAMELEON</h1>
         <div class="marquee-sub">8-BIT RETRO SYNTH</div>
+        <button id="info-toggle-btn" class="info-toggle-btn">HELP</button>
       </div>
 
       <!-- Main CRT Monitor Container -->
@@ -97,8 +98,11 @@
   </div>
 
   <!-- Instruction Panels / Side HUD -->
-  <div class="instructions-panel">
-    <h3>CONTROLS</h3>
+  <div class="instructions-panel" id="instructions-modal">
+    <div class="instructions-header">
+      <h3>CONTROLS</h3>
+      <button class="modal-close-btn" id="info-close-btn">&times;</button>
+    </div>
     <ul>
       <li><span class="key">▲</span><span class="key">▼</span> / <span class="key">W</span><span class="key">S</span> : 角度調整</li>
       <li><span class="key">SPACE</span> / <span class="key">CLICK</span> : 舌を伸ばす</li>
