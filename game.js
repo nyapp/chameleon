@@ -68,6 +68,11 @@ class GameEngine {
     // Keyboard inputs
     window.addEventListener('keydown', (e) => {
       this.keys[e.code] = true;
+
+      // Space scrolls the page by default; keep it for gameplay only
+      if (e.code === 'Space' && !e.target.closest('input, textarea, select, button')) {
+        e.preventDefault();
+      }
       
       // Start audio context on first interaction
       audio.init();
@@ -218,6 +223,11 @@ class GameEngine {
       'gb-dpad-right': 'ArrowRight'
     };
 
+    const blockTouchScroll = (el) => {
+      if (!el) return;
+      el.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+    };
+
     Object.entries(dpadButtons).forEach(([id, key]) => {
       const btn = document.getElementById(id);
       if (btn) {
@@ -238,10 +248,12 @@ class GameEngine {
 
         btn.addEventListener('mousedown', handleStart);
         btn.addEventListener('touchstart', handleStart, { passive: false });
+        blockTouchScroll(btn);
         
         btn.addEventListener('mouseup', handleEnd);
         btn.addEventListener('mouseleave', handleEnd);
         btn.addEventListener('touchend', handleEnd, { passive: false });
+        btn.addEventListener('touchcancel', handleEnd, { passive: false });
       }
     });
 
@@ -269,6 +281,7 @@ class GameEngine {
         
         btn.addEventListener('mousedown', handleAction);
         btn.addEventListener('touchstart', handleAction, { passive: false });
+        blockTouchScroll(btn);
       }
     });
 
@@ -292,6 +305,7 @@ class GameEngine {
       };
       selectBtn.addEventListener('click', toggleSettings);
       selectBtn.addEventListener('touchstart', toggleSettings, { passive: false });
+      blockTouchScroll(selectBtn);
     }
 
     if (settingsCloseBtn && settingsModal) {
@@ -315,6 +329,7 @@ class GameEngine {
       };
       startBtn.addEventListener('click', toggleInstructions);
       startBtn.addEventListener('touchstart', toggleInstructions, { passive: false });
+      blockTouchScroll(startBtn);
     }
 
     if (infoCloseBtn && instructionsModal) {
@@ -344,6 +359,23 @@ class GameEngine {
         settingsModal.classList.remove('show');
       }
     }, { passive: true });
+
+    const infoToggleBtn = document.getElementById('info-toggle-btn');
+    blockTouchScroll(infoToggleBtn);
+
+    const gameCabinet = document.querySelector('.arcade-cabinet');
+    if (gameCabinet) {
+      gameCabinet.addEventListener('contextmenu', (e) => e.preventDefault());
+      gameCabinet.addEventListener('selectstart', (e) => e.preventDefault());
+    }
+
+    document.addEventListener('touchmove', (e) => {
+      if (e.target.closest('input[type="range"]')) return;
+      if (e.target.closest('#settings-modal.show, #instructions-modal.show')) return;
+      if (e.target.closest('.arcade-cabinet')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
   }
 
   triggerBootSequence() {
