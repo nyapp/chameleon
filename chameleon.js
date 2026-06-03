@@ -305,26 +305,15 @@ class Chameleon {
       ctx.fillRect(6, -2, 8, 2);
     }
 
-    // EYE (Big, round turret eye)
-    // The eye is centered at (-2, -6) relative to head pivot
-    ctx.fillStyle = '#08080f'; // socket border
-    ctx.fillRect(-6, -10, 10, 10);
-    
-    ctx.fillStyle = skinColor;
-    ctx.fillRect(-5, -9, 8, 8);
-    
-    // Yellow iris
-    ctx.fillStyle = varColor('--neon-yellow');
-    ctx.fillRect(-3, -7, 5, 5);
+    // EYE (yellow iris on head — no socket / border layer)
+    ctx.fillStyle = varColor('--neon-yellow') || '#ffea00';
+    ctx.fillRect(-4, -8, 7, 7);
 
-    // Rotating Pupil (tracks target angle)
-    // Calculate pupil position based on eye target angle
     const eyeRelativeAngle = this.eyeTargetAngle - this.angle;
-    const pupilDist = 1.5;
+    const pupilDist = 1.2;
     const pupilX = Math.round(-1 + Math.cos(eyeRelativeAngle) * pupilDist);
     const pupilY = Math.round(-5 + Math.sin(eyeRelativeAngle) * pupilDist);
-    
-    ctx.fillStyle = '#000000'; // Pupil
+    ctx.fillStyle = '#000000';
     ctx.fillRect(pupilX, pupilY, 2, 2);
 
     ctx.restore(); // Restore to clean state

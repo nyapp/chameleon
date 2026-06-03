@@ -53,8 +53,6 @@ class Bug {
     // Animation variables
     this.wingFrame = 0;
     this.time = Math.random() * 100; // Offset start phase for wave motions
-    this.glowCycle = 0;
-    
     this.initTypeProperties();
     this.respawn();
   }
@@ -75,63 +73,62 @@ class Bug {
     return `${sign}${scoreValue}`;
   }
 
-  static drawSprite(ctx, type, wingFrame = 0, glowCycle = 1.2) {
+  static drawSprite(ctx, type, wingFrame = 0) {
     if (type === 'common') {
-      ctx.fillStyle = '#1c1c1c';
-      ctx.fillRect(-2, -2, 4, 4);
-      ctx.fillStyle = '#ff3b30';
-      ctx.fillRect(2, -2, 2, 2);
       ctx.fillStyle = '#dcdcdc';
       if (wingFrame === 0) {
-        ctx.fillRect(-4, -6, 2, 4);
-        ctx.fillRect(-2, -6, 2, 4);
+        ctx.fillRect(-4, -5, 2, 3);
+        ctx.fillRect(-1, -5, 2, 3);
       } else {
-        ctx.fillRect(-6, -4, 4, 2);
-        ctx.fillRect(-4, -4, 4, 2);
+        ctx.fillRect(-5, -3, 3, 2);
+        ctx.fillRect(-2, -3, 3, 2);
       }
+      ctx.fillStyle = '#1c1c1c';
+      ctx.fillRect(-1, -1, 2, 2);
+      ctx.fillStyle = '#ff3b30';
+      ctx.fillRect(1, -1, 2, 2);
     } else if (type === 'gnat') {
-      RenderGlow.fillNeonHalo(ctx, -6, -6, 10, 8, '#ffea00', 0.45);
       ctx.fillStyle = '#b38600';
-      ctx.fillRect(-2, -2, 4, 2);
+      ctx.fillRect(-1, -1, 2, 2);
       ctx.fillStyle = '#ffea00';
+      ctx.fillRect(0, 0, 1, 1);
       if (wingFrame === 0) {
-        ctx.fillRect(-4, -4, 2, 2);
-        ctx.fillRect(0, -4, 2, 2);
+        ctx.fillRect(-3, -3, 2, 1);
+        ctx.fillRect(1, -3, 2, 1);
       } else {
-        ctx.fillRect(-6, -2, 2, 2);
-        ctx.fillRect(2, -2, 2, 2);
+        ctx.fillRect(-4, -1, 1, 2);
+        ctx.fillRect(2, -1, 1, 2);
       }
     } else if (type === 'firefly') {
-      const glowAlpha = 0.28 + (Math.sin(glowCycle) + 1) * 0.18;
-      RenderGlow.fillNeonHalo(ctx, -6, -6, 10, 8, '#00f0ff', glowAlpha);
       ctx.fillStyle = '#00c8ff';
-      ctx.fillRect(-2, -2, 4, 4);
+      ctx.fillRect(-1, -1, 2, 2);
       ctx.fillStyle = '#ffffff';
       if (wingFrame === 0) {
-        ctx.fillRect(-4, -4, 2, 2);
-        ctx.fillRect(2, -4, 2, 2);
+        ctx.fillRect(-3, -3, 2, 1);
+        ctx.fillRect(1, -3, 2, 1);
       } else {
-        ctx.fillRect(-5, -2, 2, 2);
-        ctx.fillRect(3, -2, 2, 2);
+        ctx.fillRect(-4, -1, 1, 2);
+        ctx.fillRect(2, -1, 1, 2);
       }
       ctx.fillStyle = '#39ff14';
-      ctx.fillRect(-4, 0, 2, 2);
+      ctx.fillRect(-2, 1, 2, 1);
     } else if (type === 'wasp') {
-      RenderGlow.fillNeonHalo(ctx, -7, -7, 14, 10, '#ff3b30', 0.4);
       ctx.fillStyle = '#ff3b30';
-      ctx.fillRect(-4, -2, 8, 4);
+      ctx.fillRect(-3, -1, 2, 2);
+      ctx.fillRect(0, -1, 2, 2);
+      ctx.fillRect(3, -1, 2, 2);
       ctx.fillStyle = '#0a0a14';
-      ctx.fillRect(-2, -2, 2, 4);
-      ctx.fillRect(2, -2, 2, 4);
+      ctx.fillRect(-1, -1, 2, 2);
+      ctx.fillRect(2, -1, 2, 2);
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(-6, 0, 2, 1);
+      ctx.fillRect(-5, 0, 2, 1);
       ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
       if (wingFrame === 0) {
-        ctx.fillRect(-2, -6, 2, 4);
-        ctx.fillRect(0, -6, 2, 4);
+        ctx.fillRect(-2, -5, 2, 3);
+        ctx.fillRect(0, -5, 2, 3);
       } else {
-        ctx.fillRect(-4, -4, 2, 2);
-        ctx.fillRect(2, -4, 2, 2);
+        ctx.fillRect(-4, -3, 2, 2);
+        ctx.fillRect(2, -3, 2, 2);
       }
     }
   }
@@ -156,7 +153,7 @@ class Bug {
         ctx.save();
         ctx.translate(size / 2, size / 2);
         ctx.scale(scale, scale);
-        Bug.drawSprite(ctx, type, 0, 1.2);
+        Bug.drawSprite(ctx, type, 0);
         ctx.restore();
       }
 
@@ -217,7 +214,6 @@ class Bug {
     }
     
     this.time += 0.08;
-    this.glowCycle += 0.15;
     
     // Tick wing animation (flapping)
     if (Math.floor(this.time * 5) % 2 === 0) {
@@ -274,7 +270,7 @@ class Bug {
     const scale = 2; // Pixel art multiplier
     
     ctx.translate(Math.round(this.x), Math.round(this.y));
-    Bug.drawSprite(ctx, this.type, this.wingFrame, this.glowCycle);
+    Bug.drawSprite(ctx, this.type, this.wingFrame);
 
     ctx.restore();
   }

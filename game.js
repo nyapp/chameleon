@@ -980,9 +980,16 @@ class GameEngine {
     this.ctx.fillText(`HI-SCORE:${String(this.highScore).padStart(6, '0')}`, 138, 12);
 
     if (isPlaying) {
-      this.ctx.font = '6px "Press Start 2P", monospace';
-      this.ctx.fillStyle = '#ff007f';
-      this.ctx.fillText(`LVL:${this.level}`, 100, 22);
+      const levelText = `LEVEL ${this.level}`;
+      const levelY = 23;
+      this.ctx.font = '7px "Press Start 2P", monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
+      this.ctx.lineWidth = 2;
+      this.ctx.strokeText(levelText, this.width / 2, levelY);
+      this.ctx.fillStyle = '#ffea00';
+      this.ctx.fillText(levelText, this.width / 2, levelY);
+      this.ctx.textAlign = 'left';
 
       if (this.combo > 1) {
         const comboGlow = Math.sin(this.comboTimer * 0.2) > 0;
