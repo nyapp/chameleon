@@ -31,7 +31,8 @@ class Chameleon {
     this.idleTime = 0;
     this.mouthOpen = 0; // 0 = closed, 1 = fully open
     this.eyeTargetAngle = 0;
-    this.flashFrames = 0; // Flash red when hit
+    this.flashFrames = 0; // Flash when hit (red or poison purple)
+    this.hurtPoison = false;
     this.powerUpActive = null; // 'gold', 'multi', 'slow'
     this.colorCycle = 0;
     
@@ -160,8 +161,9 @@ class Chameleon {
     return false;
   }
 
-  triggerHurt() {
-    this.flashFrames = 15; // Flashes red for 15 frames
+  triggerHurt(isPoison = false) {
+    this.flashFrames = 15;
+    this.hurtPoison = isPoison;
   }
 
   activatePowerUp(type) {
@@ -217,16 +219,31 @@ class Chameleon {
       bellyColor = '#ffaa00';
       darkColor = '#b38600';
     } else if (this.powerUpActive === 'multi') {
-      // Flashing multi-tongue skin
+      // Flashing multi-tongue skin — all body parts cycle together
       const speed = Math.floor(this.colorCycle * 5) % 3;
-      skinColor = speed === 0 ? '#39ff14' : (speed === 1 ? '#ff007f' : '#00f0ff');
-      bellyColor = '#fff';
-      darkColor = '#119900';
+      if (speed === 0) {
+        skinColor = '#39ff14';
+        bellyColor = '#b8ffb8';
+        darkColor = '#1a9900';
+      } else if (speed === 1) {
+        skinColor = '#ff007f';
+        bellyColor = '#ffb8dc';
+        darkColor = '#99004d';
+      } else {
+        skinColor = '#00f0ff';
+        bellyColor = '#b8ffff';
+        darkColor = '#008ba3';
+      }
     } else if (this.flashFrames > 0) {
-      // Hurt flash red
-      skinColor = '#ff3b30';
-      bellyColor = '#ffffff';
-      darkColor = '#800000';
+      if (this.hurtPoison) {
+        skinColor = '#bf5af2';
+        bellyColor = '#39ff14';
+        darkColor = '#5b21b6';
+      } else {
+        skinColor = '#ff3b30';
+        bellyColor = '#ffffff';
+        darkColor = '#800000';
+      }
     }
 
     // 2. Draw Body & Legs (Stationary part)

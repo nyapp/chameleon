@@ -30,10 +30,10 @@ class Bug {
     wasp: {
       scoreValue: -200,
       energyValue: -25,
-      color: '#ff3b30',
+      color: '#bf5af2',
       size: 5,
       labelJa: '毒ハチ',
-      tag: '体力減少',
+      tag: '毒・ダメージ',
     },
   };
 
@@ -113,23 +113,39 @@ class Bug {
       ctx.fillStyle = '#39ff14';
       ctx.fillRect(-2, 1, 2, 1);
     } else if (type === 'wasp') {
-      ctx.fillStyle = '#ff3b30';
-      ctx.fillRect(-3, -1, 2, 2);
-      ctx.fillRect(0, -1, 2, 2);
-      ctx.fillRect(3, -1, 2, 2);
-      ctx.fillStyle = '#0a0a14';
-      ctx.fillRect(-1, -1, 2, 2);
-      ctx.fillRect(2, -1, 2, 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(-5, 0, 2, 1);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      // Translucent toxic-purple wings (behind body)
+      ctx.fillStyle = 'rgba(157, 0, 255, 0.4)';
       if (wingFrame === 0) {
-        ctx.fillRect(-2, -5, 2, 3);
-        ctx.fillRect(0, -5, 2, 3);
+        ctx.fillRect(-3, -6, 3, 4);
+        ctx.fillRect(1, -6, 3, 4);
       } else {
-        ctx.fillRect(-4, -3, 2, 2);
-        ctx.fillRect(2, -3, 2, 2);
+        ctx.fillRect(-5, -4, 2, 3);
+        ctx.fillRect(3, -4, 2, 3);
       }
+      // Purple abdomen segments with dark poison stripes
+      ctx.fillStyle = '#bf5af2';
+      ctx.fillRect(-4, -1, 3, 3);
+      ctx.fillRect(-1, -1, 3, 3);
+      ctx.fillRect(2, -1, 3, 3);
+      ctx.fillStyle = '#1a0a2e';
+      ctx.fillRect(-2, -1, 1, 3);
+      ctx.fillRect(1, -1, 1, 3);
+      // Head + toxic green warning eyes
+      ctx.fillStyle = '#7c3aed';
+      ctx.fillRect(4, -1, 2, 2);
+      ctx.fillStyle = '#39ff14';
+      ctx.fillRect(4, -1, 1, 1);
+      ctx.fillRect(5, 0, 1, 1);
+      // Stinger with poison drip
+      ctx.fillStyle = '#39ff14';
+      ctx.fillRect(-6, 0, 2, 1);
+      ctx.fillStyle = '#00ff41';
+      ctx.fillRect(-7, 1, 1, 1);
+      ctx.fillRect(-6, 2, 1, 1);
+      // Skull-mark warning on back
+      ctx.fillStyle = '#39ff14';
+      ctx.fillRect(-3, 0, 1, 1);
+      ctx.fillRect(-1, 0, 1, 1);
     }
   }
 
@@ -160,7 +176,8 @@ class Bug {
       const scoreEl = item.querySelector('.legend-score');
       if (scoreEl) {
         scoreEl.textContent = `${Bug.formatScoreValue(meta.scoreValue)}点`;
-        scoreEl.classList.toggle('legend-score--negative', meta.scoreValue < 0);
+        scoreEl.classList.toggle('legend-score--toxic', type === 'wasp');
+        scoreEl.classList.toggle('legend-score--negative', meta.scoreValue < 0 && type !== 'wasp');
         scoreEl.classList.toggle('legend-score--positive', meta.scoreValue > 0);
       }
 
@@ -266,12 +283,8 @@ class Bug {
     if (this.state === 'eaten') return;
 
     ctx.save();
-    
-    const scale = 2; // Pixel art multiplier
-    
     ctx.translate(Math.round(this.x), Math.round(this.y));
     Bug.drawSprite(ctx, this.type, this.wingFrame);
-
     ctx.restore();
   }
 }

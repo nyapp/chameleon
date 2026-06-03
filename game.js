@@ -735,7 +735,7 @@ class GameEngine {
         this.energy = Math.max(0, this.energy + eatenBug.energyValue);
         this.score = Math.max(0, this.score + eatenBug.scoreValue);
         this.screenShake = 12;
-        this.chameleon.triggerHurt();
+        this.chameleon.triggerHurt(true);
         audio.playHurt();
       } else {
         // Successful fly capture
