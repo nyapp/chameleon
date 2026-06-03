@@ -739,18 +739,17 @@ class GameEngine {
     this.ctx.fillText(`HI-SCORE:${String(this.highScore).padStart(6, '0')}`, 138, 12);
 
     if (isPlaying) {
-      // Second-row stats (hunger moved to bottom)
-      this.ctx.font = '6px "Press Start 2P", monospace';
-      this.ctx.fillStyle = '#39ff14';
-      this.ctx.fillText(`ハエ:${String(this.fliesEaten).padStart(3, '0')}`, 8, 22);
+      this.drawBugLegend();
 
+      // Stats row (below score + bug legend)
+      this.ctx.font = '6px "Press Start 2P", monospace';
       this.ctx.fillStyle = '#ff007f';
-      this.ctx.fillText(`LVL:${this.level}`, 100, 22);
+      this.ctx.fillText(`LVL:${this.level}`, 100, 30);
 
       if (this.combo > 1) {
         const comboGlow = Math.sin(this.comboTimer * 0.2) > 0;
         this.ctx.fillStyle = comboGlow ? '#ffea00' : '#ffffff';
-        this.ctx.fillText(`COMBO x${this.combo}`, 160, 22);
+        this.ctx.fillText(`COMBO x${this.combo}`, 160, 30);
       }
 
       // Power Up Active Text (above hunger bar)
@@ -836,6 +835,47 @@ class GameEngine {
         this.ctx.textAlign = 'left'; // reset
       }
     }
+  }
+
+  drawBugLegend() {
+    const types = Bug.LEGEND_ORDER;
+    const panelX = 6;
+    const panelY = 14;
+    const itemW = 62;
+    const panelW = itemW * types.length;
+    const panelH = 12;
+    const iconScale = 1.25;
+    const iconOffsetX = 5;
+    const scoreOffsetX = 14;
+    const centerY = panelY + 7;
+
+    this.ctx.save();
+
+    this.ctx.fillStyle = 'rgba(5, 5, 12, 0.72)';
+    this.ctx.fillRect(panelX - 2, panelY - 2, panelW + 4, panelH);
+    this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.25)';
+    this.ctx.lineWidth = 1;
+    this.ctx.strokeRect(panelX - 2, panelY - 2, panelW + 4, panelH);
+
+    this.ctx.font = '5px "Press Start 2P", monospace';
+    this.ctx.textAlign = 'left';
+
+    types.forEach((type, i) => {
+      const meta = Bug.TYPE_META[type];
+      const baseX = panelX + i * itemW;
+      const iconX = baseX + iconOffsetX;
+
+      this.ctx.save();
+      this.ctx.translate(iconX, centerY);
+      this.ctx.scale(iconScale, iconScale);
+      Bug.drawSprite(this.ctx, type, 0, 1.2);
+      this.ctx.restore();
+
+      this.ctx.fillStyle = meta.scoreValue < 0 ? '#ff3b30' : '#ffea00';
+      this.ctx.fillText(Bug.formatScoreValue(meta.scoreValue), baseX + scoreOffsetX, centerY + 2);
+    });
+
+    this.ctx.restore();
   }
 
   drawLowHungerWarning() {
@@ -936,7 +976,7 @@ class GameEngine {
     this.ctx.fillStyle = '#ffffff';
     this.ctx.fillText(`YOUR SCORE: ${this.score}`, this.width / 2, 115);
     this.ctx.fillStyle = '#39ff14';
-    this.ctx.fillText(`EATEN FLIES: ${this.fliesEaten}`, this.width / 2, 130);
+    this.ctx.fillText(`fliesEaten: ${this.fliesEaten}`, this.width / 2, 130);
     
     if (this.score >= this.highScore && this.score > 0) {
       this.ctx.fillStyle = '#ffea00';
@@ -970,5 +1010,6 @@ function ctxFlicker(ctx) {
 
 // Initialize on page load
 window.addEventListener('load', () => {
+  Bug.initLegendUI();
   window.game = new GameEngine();
 });

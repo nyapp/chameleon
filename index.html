@@ -111,10 +111,26 @@
     </ul>
     <div class="bug-legend">
       <h4>BUGS INFO</h4>
-      <div class="legend-item"><span class="legend-dot common-fly"></span> 普通のハエ: 100点</div>
-      <div class="legend-item"><span class="legend-dot gnat-fly"></span> 金の羽虫: 300点 (高速)</div>
-      <div class="legend-item"><span class="legend-dot fire-fly"></span> ホタル: 200点 + パワーアップ</div>
-      <div class="legend-item"><span class="legend-dot wasp-fly"></span> 毒ハチ: -200点 & 体力減少</div>
+      <div class="legend-item" data-bug-type="common">
+        <canvas class="bug-legend-icon" width="32" height="32" aria-hidden="true"></canvas>
+        <span class="legend-score"></span>
+        <span class="legend-label"></span>
+      </div>
+      <div class="legend-item" data-bug-type="gnat">
+        <canvas class="bug-legend-icon" width="32" height="32" aria-hidden="true"></canvas>
+        <span class="legend-score"></span>
+        <span class="legend-label"></span>
+      </div>
+      <div class="legend-item" data-bug-type="firefly">
+        <canvas class="bug-legend-icon" width="32" height="32" aria-hidden="true"></canvas>
+        <span class="legend-score"></span>
+        <span class="legend-label"></span>
+      </div>
+      <div class="legend-item" data-bug-type="wasp">
+        <canvas class="bug-legend-icon" width="32" height="32" aria-hidden="true"></canvas>
+        <span class="legend-score"></span>
+        <span class="legend-label"></span>
+      </div>
     </div>
   </div>
 

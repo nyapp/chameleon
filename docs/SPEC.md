@@ -253,7 +253,7 @@ distance < bug.size * 2.5 + 4
 
 ### 7.1 通常捕獲（`wasp` 以外）
 
-1. `fliesEaten++`
+1. `fliesEaten++`（表示はゲームオーバー時のみ）
 2. `combo++`、`comboTimer = maxComboTime`（150 フレーム）
 3. **獲得スコア**: `reward = baseScore * combo`（その時点のコンボ値で乗算）
 4. `energy += energyValue`（最大 100）
@@ -273,7 +273,7 @@ distance < bug.size * 2.5 + 4
 - `energy += energyValue`（−25、下限 0）
 - `screenShake = 12`
 - `chameleon.triggerHurt()`、`audio.playHurt()`
-- **`fliesEaten` は増えない**
+- 毒ハチ（`wasp`）捕獲時は `fliesEaten` は増えない
 
 ### 7.4 レベル
 
@@ -397,8 +397,8 @@ level = floor(score / 1200) + 1
 | 要素 | 位置・内容 |
 |------|------------|
 | SCORE / HI-SCORE | 上段左右 |
-| ハエ捕獲数 | `ハエ:NNN` |
 | LVL | レベル |
+| ハエ捕獲数 | ゲームオーバー画面のみ `fliesEaten: N`（プレイ中 HUD には非表示） |
 | COMBO | コンボ 2 以上で表示 |
 | パワーアップ名 | 空腹バー上、残り秒数 |
 | HUNGER | 画面下部バー |

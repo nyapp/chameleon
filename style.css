@@ -794,20 +794,42 @@ body {
   align-items: center;
   gap: 10px;
   font-size: 0.85rem;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
 }
 
-.legend-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  display: inline-block;
+.bug-legend-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
 }
 
-.common-fly { background-color: #888888; box-shadow: 0 0 6px #888888; }
-.gnat-fly { background-color: var(--neon-yellow); box-shadow: 0 0 6px var(--neon-yellow); }
-.fire-fly { background-color: var(--neon-blue); box-shadow: 0 0 8px var(--neon-blue); animation: led-blink 0.6s infinite alternate steps(1); }
-.wasp-fly { background-color: var(--neon-red); box-shadow: 0 0 6px var(--neon-red); }
+.legend-score {
+  font-family: var(--font-arcade);
+  font-size: 0.65rem;
+  letter-spacing: 0.5px;
+  min-width: 4.5em;
+  flex-shrink: 0;
+}
+
+.legend-score--positive {
+  color: var(--neon-yellow);
+  text-shadow: 0 0 6px rgba(255, 234, 0, 0.5);
+}
+
+.legend-score--negative {
+  color: var(--neon-red);
+  text-shadow: 0 0 6px rgba(255, 59, 48, 0.5);
+}
+
+.legend-label {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.8rem;
+}
 
 /* Responsive adjustments */
 @media (max-width: 600px) {
