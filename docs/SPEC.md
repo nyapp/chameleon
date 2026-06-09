@@ -80,7 +80,7 @@
 |------|------|
 | `Space` | `triggerShoot()`（`PLAYING` 時） |
 | キャンバス `mousedown` / `touchstart` | 同上（タイトル/ゲームオーバー時は開始/リトライ） |
-| `gb-btn-a` / `gb-btn-b` | 同上 |
+| `gb-shoot-btn`（丸ボタン） | 同上 |
 
 `triggerShoot()` は `chameleon.shoot()` が成功したときのみ `audio.playShoot()` を再生する。舌が `idle` でないときは発射不可。
 
@@ -88,7 +88,7 @@
 
 | 状態 | 入力 |
 |------|------|
-| `TITLE` | `Space`、キャンバスクリック/タッチ、A/B ボタン → `startGame()` |
+| `TITLE` | `Space`、キャンバスクリック/タッチ、丸ボタン → `startGame()` |
 | `GAMEOVER` | 同上 → `resetGame()`（静的 300ms 後に `startGame()`） |
 
 ### 3.4 UI・モーダル
@@ -397,7 +397,7 @@ level = floor(score / 1200) + 1
 
 - アーケードキャビネット風レイアウト
 - CRT: スキャンライン、ベゼル、カーブ、ヴィネット、起動時静的ノイズ
-- Game Boy 風コントロールパネル（D-pad / A / B / SELECT / START）
+- Game Boy 風コントロールパネル（D-pad / 丸ボタン / MENU）
 
 ### 11.2 HUD（`PLAYING`）
 
