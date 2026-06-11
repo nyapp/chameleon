@@ -295,8 +295,8 @@ class GameEngine {
       }
     });
 
-    // Game Boy Action button (A)
-    const actionBtns = ['gb-btn-a'];
+    // Shoot button (on-screen pink round button)
+    const actionBtns = ['gb-shoot-btn'];
     actionBtns.forEach(id => {
       const btn = document.getElementById(id);
       if (btn) {
@@ -460,11 +460,11 @@ class GameEngine {
     // Shoot sound and action
     if (this.chameleon.shoot()) {
       audio.playShoot();
-      // Game Boy button feedback
-      const btnA = document.getElementById('gb-btn-a');
-      if (btnA) {
-        btnA.classList.add('active');
-        setTimeout(() => btnA.classList.remove('active'), 100);
+      // Shoot button visual feedback
+      const shootBtn = document.getElementById('gb-shoot-btn');
+      if (shootBtn) {
+        shootBtn.classList.add('active');
+        setTimeout(() => shootBtn.classList.remove('active'), 100);
       }
     }
   }
@@ -1163,7 +1163,7 @@ class GameEngine {
     // Copyright
     this.ctx.font = '5px "Press Start 2P", monospace';
     this.ctx.fillStyle = '#8080a0';
-    this.ctx.fillText("© 2026 DEEPMIND RETRO CORP", this.width / 2, 225);
+    this.ctx.fillText("© 2026 AXION COGNITIONS", this.width / 2, 225);
     
     this.ctx.textAlign = 'left'; // reset
   }
