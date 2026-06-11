@@ -10,6 +10,7 @@ signal released(direction: Vector2, magnitude: float)
 const RADIUS: float = 28.0
 const DEADZONE: float = 0.25
 const KNOB_MAX: float = 22.0
+const INVERT_AIM: bool = true
 
 var _active: bool = false
 var _knob_offset: Vector2 = Vector2.ZERO
@@ -59,12 +60,9 @@ func _update_knob(local_pos: Vector2) -> void:
 	if offset.length() > KNOB_MAX:
 		offset = offset.normalized() * KNOB_MAX
 	_knob_offset = offset
-	if KNOB_MAX > 0.0:
-		_last_direction = offset / KNOB_MAX
-		_last_magnitude = _last_direction.length()
-	else:
-		_last_direction = Vector2.ZERO
-		_last_magnitude = 0.0
+	var raw_direction: Vector2 = offset / KNOB_MAX if KNOB_MAX > 0.0 else Vector2.ZERO
+	_last_direction = -raw_direction if INVERT_AIM else raw_direction
+	_last_magnitude = raw_direction.length()
 	aim_changed.emit(_last_direction, _last_magnitude)
 	queue_redraw()
 
