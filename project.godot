@@ -16,7 +16,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="NEO CHAMELEON"
 config/description="Retro-Futuristic Arcade Game"
-run/main_scene="res://scenes/MainScene.tscn"
+run/main_scene="res://scenes/CabinetScene.tscn"
 config/features=PackedStringArray("4.6")
 config/icon="res://icon.svg"
 
@@ -28,10 +28,10 @@ GameLayout="*res://scripts/GameLayout.gd"
 
 [display]
 
-window/size/viewport_width=256
-window/size/viewport_height=304
-window/size/window_width_override=768
-window/size/window_height_override=912
+window/size/viewport_width=296
+window/size/viewport_height=458
+window/size/window_width_override=888
+window/size/window_height_override=1374
 window/handheld/orientation=1
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"

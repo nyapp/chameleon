@@ -15,8 +15,6 @@ const LEVEL_SCORE_THRESHOLD: int = 1200
 @onready var bug_container: Node2D = $BugContainer
 @onready var camera: Camera2D = $ScreenShakeCamera
 @onready var overlay_draw: Node2D = $HUD/OverlayDraw
-@onready var control_panel: Control = $ControlUILayer/ControlPanel
-@onready var virtual_analog_stick: VirtualAnalogStick = $ControlUILayer/ControlPanel/VirtualAnalogStick
 
 # ─── 状態変数 ────────────────────────────────────────────────
 var screen_shake: float = 0.0
@@ -27,11 +25,7 @@ var level_up_banner_frames: int = 0
 var mouse_target: Vector2 = Vector2.ZERO
 var has_mouse_target: bool = false
 
-# D-Pad仮想ボタン押下状態（UI向け）
-var dpad_up: bool = false
-var dpad_down: bool = false
-
-# アナログスティック入力
+# アナログスティック入力（筐体 UI からシグナル経由）
 var stick_aiming: bool = false
 var stick_direction: Vector2 = Vector2.ZERO
 
@@ -40,72 +34,69 @@ const BUG_SCRIPT: GDScript = preload("res://scripts/Bug.gd")
 
 # ─── 初期化 ─────────────────────────────────────────────────
 func _ready() -> void:
-	# GameStateシグナル接続
 	GameState.game_over_triggered.connect(_on_game_over)
 	GameState.level_up.connect(_on_level_up)
 	GameState.power_up_deactivated.connect(_on_power_up_deactivated)
 	GameState.power_up_activated.connect(_on_power_up_activated)
 
-	# OverlayDrawにChameleon参照を渡す
 	if overlay_draw:
 		overlay_draw.chameleon_ref = chameleon
 
-	if virtual_analog_stick:
-		virtual_analog_stick.aim_changed.connect(_on_stick_aim_changed)
-		virtual_analog_stick.released.connect(_on_stick_released)
-
-	# 初期バグのスポーン
 	_spawn_initial_bugs()
-
-	# ブートシーケンス（JSの triggerBootSequence 相当）
-	# Godotでは AnimationPlayer や Tween で実現できるが、シンプルにタイマーで代替
 	_trigger_boot_animation()
+
+# ─── 筐体 UI からの公開 API ───────────────────────────────────
+func on_stick_aim_changed(direction: Vector2, _magnitude: float) -> void:
+	stick_aiming = true
+	stick_direction = direction
+
+func on_stick_released(direction: Vector2, magnitude: float) -> void:
+	stick_aiming = false
+	stick_direction = Vector2.ZERO
+	if GameState.state != "PLAYING":
+		return
+	if magnitude < VirtualAnalogStick.DEADZONE:
+		has_mouse_target = false
+		return
+	var desired: float = atan2(direction.y, direction.x)
+	chameleon.target_angle = clamp(desired, Chameleon.ANGLE_MIN, Chameleon.ANGLE_MAX)
+	chameleon.angle = chameleon.target_angle
+	has_mouse_target = false
+	_trigger_shoot()
 
 # ─── ブートアニメ ────────────────────────────────────────────
 func _trigger_boot_animation() -> void:
-	# CRTスタティックエフェクトの代わりにカメラを一瞬真っ黒にする
-	# OverlayDrawでフラッシュを描画（省略可）
 	pass
 
 # ─── メインループ ────────────────────────────────────────────
 func _process(delta: float) -> void:
 	var gs: Node = GameState
+	var dpad_aiming: bool = Input.is_action_pressed("aim_up") or Input.is_action_pressed("aim_down")
 
-	# D-Pad仮想ボタン状態 → Chameleonへ転送
-	dpad_up = Input.is_action_pressed("aim_up")
-	dpad_down = Input.is_action_pressed("aim_down")
-
-	# OverlayDrawのD-Padフラグを更新
 	if overlay_draw:
-		overlay_draw.is_dpad_aiming = dpad_up or dpad_down
+		overlay_draw.is_dpad_aiming = dpad_aiming
 		overlay_draw.is_stick_aiming = stick_aiming
 		overlay_draw.level_up_banner_frames = level_up_banner_frames
 
-	# スティック照準 → Chameleonへ転送
 	if stick_aiming and stick_direction.length_squared() > 0.0:
 		var pivot := Vector2(Chameleon.PIVOT_X, Chameleon.PIVOT_Y)
 		mouse_target = pivot + stick_direction.normalized() * chameleon.tongue_max_len
 		has_mouse_target = true
 
-	# 凍結中（メニュー開放中）はシミュレーション停止
 	if gs.is_frozen():
 		chameleon.update_chameleon(delta, _get_bug_list())
 		_update_bugs_idle(delta)
 		return
 
-	# 画面揺れのdecay
 	_tick_screen_shake()
 
-	# Chameleonに入力を渡して更新
 	chameleon.has_mouse_target = has_mouse_target
 	chameleon.mouse_target = mouse_target
 	chameleon.update_chameleon(delta, _get_bug_list())
 
 	match gs.state:
 		"TITLE", "GAMEOVER":
-			# タイトル・ゲームオーバー中も虫はアニメーション
 			_update_bugs_idle(delta)
-
 		"PLAYING":
 			_update_playing(delta)
 
@@ -113,27 +104,16 @@ func _process(delta: float) -> void:
 func _update_playing(delta: float) -> void:
 	var gs: Node = GameState
 
-	# 1. エネルギー消費
 	if not gs.tick_energy(delta):
 		gs.trigger_game_over()
 		return
 
-	# 2. コンボタイマー
 	gs.tick_combo(delta)
-
-	# 3. パワーアップタイマー
 	gs.tick_power_up(delta)
-
-	# 4. 虫の更新
 	_update_bugs_playing(delta)
-
-	# 5. 舌 vs 虫の衝突判定
 	_check_tongue_collision()
-
-	# 6. 食べた虫の処理
 	_check_swallow_result()
 
-	# 7. アニメーションのdecay
 	if level_up_banner_frames > 0:
 		level_up_banner_frames -= 1
 
@@ -172,9 +152,8 @@ func _check_tongue_collision() -> void:
 			chameleon.tongue_state = "retracting"
 			break
 
-# ─── 食べた虫の結果処理（tongue_swallowed シグナル受信後） ───
+# ─── 食べた虫の結果処理 ───────────────────────────────────────
 func _check_swallow_result() -> void:
-	# chameleon.gd の swallowing ステートで bug.state = "eaten" になった直後を検出
 	for bug in bug_container.get_children():
 		if bug.state == "eaten":
 			_process_eaten_bug(bug)
@@ -185,16 +164,14 @@ func _process_eaten_bug(bug: Bug) -> void:
 	var gs: Node = GameState
 
 	if bug.bug_type == "wasp":
-		# 毒ハチ：ダメージ
 		gs.combo = 0
 		gs.combo_timer = 0.0
-		gs.energy = max(0.0, gs.energy + bug.energy_value)  # energy_value は負値
-		gs.score = max(0, gs.score + bug.score_value)        # score_value は負値
+		gs.energy = max(0.0, gs.energy + bug.energy_value)
+		gs.score = max(0, gs.score + bug.score_value)
 		screen_shake = 12.0
 		chameleon.trigger_hurt(true)
 		AudioManager.play_hurt()
 	else:
-		# 通常の捕獲：スコア・エネルギー加算
 		gs.flies_eaten += 1
 		gs.increment_combo()
 
@@ -205,15 +182,12 @@ func _process_eaten_bug(bug: Bug) -> void:
 
 		AudioManager.play_eat()
 
-		# Firefly → ランダムパワーアップ
 		if bug.bug_type == "firefly":
 			_trigger_random_power_up()
 
-	# レベルアップ確認
 	if gs.check_level_up():
 		level_up_banner_frames = 80
 		AudioManager.play_powerup()
-		# レベル4以下で追加バグをスポーン
 		var bug_count: int = bug_container.get_child_count()
 		if gs.level <= 4 and bug_count < MAX_BUGS + 2:
 			_spawn_bug(_get_extra_bug_type(gs.level))
@@ -243,7 +217,7 @@ func _on_game_over() -> void:
 	screen_shake = max(screen_shake, 12.0)
 
 # ─── レベルアップ ────────────────────────────────────────────
-func _on_level_up(new_level: int) -> void:
+func _on_level_up(_new_level: int) -> void:
 	level_up_banner_frames = 80
 
 # ─── 画面揺れ ────────────────────────────────────────────────
@@ -256,7 +230,6 @@ func _tick_screen_shake() -> void:
 	elif GameState.state == "PLAYING" and screen_shake > 0.0:
 		screen_shake = max(0.0, screen_shake - 0.8)
 
-	# Camera2Dのオフセットで揺らす
 	if screen_shake > 0.0 and camera:
 		camera.offset = Vector2(
 			randf_range(-1.0, 1.0) * screen_shake,
@@ -266,48 +239,31 @@ func _tick_screen_shake() -> void:
 		camera.offset = Vector2.ZERO
 
 # ─── 入力処理 ────────────────────────────────────────────────
-func _screen_to_game_position(screen_pos: Vector2) -> Vector2:
-	return get_viewport().get_canvas_transform().affine_inverse() * screen_pos
-
-func _is_in_control_zone(screen_pos: Vector2) -> bool:
-	var game_pos: Vector2 = _screen_to_game_position(screen_pos)
-	return game_pos.y >= GameLayout.PLAY_H
-
 func _input(event: InputEvent) -> void:
 	var gs: Node = GameState
 
-	# マウス移動 → エイム
 	if event is InputEventMouseMotion and gs.state == "PLAYING" and not stick_aiming:
-		if not _is_in_control_zone(event.position):
-			mouse_target = get_local_mouse_position()
-			has_mouse_target = true
+		mouse_target = get_local_mouse_position()
+		has_mouse_target = true
 
-	# マウスクリック
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
-			if not _is_in_control_zone(event.position):
-				_on_screen_tapped()
+			_on_screen_tapped()
 		elif not stick_aiming:
 			has_mouse_target = false
 
-	# タッチ
 	elif event is InputEventScreenTouch:
-		if _is_in_control_zone(event.position):
-			return
 		if event.pressed:
-			mouse_target = _screen_to_game_position(event.position)
+			mouse_target = get_viewport().get_canvas_transform().affine_inverse() * event.position
 			has_mouse_target = true
 			_on_screen_tapped()
 		elif not stick_aiming:
 			has_mouse_target = false
 
-	elif event is InputEventScreenDrag:
-		if stick_aiming or _is_in_control_zone(event.position):
-			return
-		mouse_target = _screen_to_game_position(event.position)
+	elif event is InputEventScreenDrag and not stick_aiming:
+		mouse_target = get_viewport().get_canvas_transform().affine_inverse() * event.position
 		has_mouse_target = true
 
-	# キーボード
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
 			KEY_SPACE:
@@ -317,33 +273,14 @@ func _input(event: InputEvent) -> void:
 					_toggle_pause()
 
 func _on_screen_tapped() -> void:
-	var gs: Node = GameState
 	AudioManager.start_bgm()
-	match gs.state:
+	match GameState.state:
 		"TITLE":
 			_start_game()
 		"GAMEOVER":
 			_reset_game()
 		"PLAYING":
 			_trigger_shoot()
-
-func _on_stick_aim_changed(direction: Vector2, _magnitude: float) -> void:
-	stick_aiming = true
-	stick_direction = direction
-
-func _on_stick_released(direction: Vector2, magnitude: float) -> void:
-	stick_aiming = false
-	stick_direction = Vector2.ZERO
-	if GameState.state != "PLAYING":
-		return
-	if magnitude < VirtualAnalogStick.DEADZONE:
-		has_mouse_target = false
-		return
-	var desired: float = atan2(direction.y, direction.x)
-	chameleon.target_angle = clamp(desired, Chameleon.ANGLE_MIN, Chameleon.ANGLE_MAX)
-	chameleon.angle = chameleon.target_angle
-	has_mouse_target = false
-	_trigger_shoot()
 
 func _trigger_shoot() -> void:
 	if GameState.state != "PLAYING":
@@ -361,7 +298,6 @@ func _start_game() -> void:
 	AudioManager.start_bgm()
 
 func _reset_game() -> void:
-	# ブートアニメーション後にスタート
 	await get_tree().create_timer(0.3).timeout
 	_start_game()
 
@@ -378,7 +314,6 @@ func _toggle_pause() -> void:
 
 # ─── バグ管理 ────────────────────────────────────────────────
 func _spawn_initial_bugs() -> void:
-	# 既存の虫を全てrespawn
 	for child in bug_container.get_children():
 		child.queue_free()
 

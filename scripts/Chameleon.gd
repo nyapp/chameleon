@@ -53,6 +53,8 @@ var mouse_target: Vector2 = Vector2.ZERO
 var has_mouse_target: bool = false
 var keys_up: bool = false
 var keys_down: bool = false
+var keys_left: bool = false
+var keys_right: bool = false
 
 # ─── シグナル ────────────────────────────────────────────────
 signal tongue_swallowed()  # 舌が完全に戻ったとき（MainSceneが食べた処理をする）
@@ -99,9 +101,9 @@ func update_chameleon(delta: float, current_bugs: Array) -> void:
 		desired = clamp(desired, -PI * 0.6, PI * 0.1)
 		target_angle = desired
 	else:
-		if keys_up:
+		if keys_up or keys_left:
 			target_angle -= 0.04
-		if keys_down:
+		if keys_down or keys_right:
 			target_angle += 0.04
 		target_angle = clamp(target_angle, ANGLE_MIN, ANGLE_MAX)
 
@@ -171,6 +173,8 @@ func update_chameleon(delta: float, current_bugs: Array) -> void:
 func _process(_delta: float) -> void:
 	keys_up = Input.is_action_pressed("aim_up")
 	keys_down = Input.is_action_pressed("aim_down")
+	keys_left = Input.is_action_pressed("aim_left")
+	keys_right = Input.is_action_pressed("aim_right")
 
 # ─── 描画（JSの chameleon.draw(ctx) 相当） ───────────────────
 func _draw() -> void:

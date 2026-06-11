@@ -81,7 +81,6 @@ func _draw() -> void:
 	var base_color := Color(0.118, 0.118, 0.176, 0.9)   # #1e1e2d
 	var ring_color := Color(0.616, 0.0, 1.0, 0.35)        # #9d00ff
 	var knob_color := Color(1.0, 0.0, 0.498)              # #ff007f
-	var knob_tip := Color(1.0, 1.0, 1.0, 0.85)
 
 	draw_circle(center, RADIUS, base_color)
 	draw_arc(center, RADIUS, 0.0, TAU, 32, ring_color, 1.5)
@@ -90,4 +89,3 @@ func _draw() -> void:
 	var knob_pos: Vector2 = center + _knob_offset
 	draw_circle(knob_pos, 10.0, Color(knob_color.r, knob_color.g, knob_color.b, 0.35))
 	draw_circle(knob_pos, 8.0, knob_color)
-	draw_circle(knob_pos, 3.0, knob_tip)
