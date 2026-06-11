@@ -7,6 +7,8 @@
 [ext_resource type="Script" uid="uid://dp0grup534u62" path="res://scripts/HUDDraw.gd" id="6_huddraw"]
 [ext_resource type="Script" uid="uid://c2npgst4w1jy5" path="res://scripts/OverlayDraw.gd" id="7_overlay"]
 [ext_resource type="Shader" uid="uid://7pxtsvt5p46o" path="res://shaders/crt_effect.gdshader" id="8_crt"]
+[ext_resource type="Script" path="res://scripts/ControlPanel.gd" id="9_panel"]
+[ext_resource type="Script" path="res://scripts/VirtualAnalogStick.gd" id="10_stick"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_crt"]
 shader = ExtResource("8_crt")
@@ -46,8 +48,29 @@ script = ExtResource("7_overlay")
 [node name="WarningDraw" type="Node2D" parent="HUD" unique_id=1210994513]
 z_index = 2
 
+[node name="ControlUILayer" type="CanvasLayer" parent="." unique_id=1847293649]
+layer = 11
+
+[node name="ControlPanel" type="Control" parent="ControlUILayer" unique_id=1847293650]
+layout_mode = 0
+offset_top = 240.0
+offset_right = 256.0
+offset_bottom = 304.0
+mouse_filter = 0
+script = ExtResource("9_panel")
+
+[node name="VirtualAnalogStick" type="Control" parent="ControlUILayer/ControlPanel" unique_id=1847293651]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 4.0
+offset_right = 76.0
+offset_bottom = 60.0
+mouse_filter = 0
+script = ExtResource("10_stick")
+
 [node name="CRTEffectsLayer" type="CanvasLayer" parent="." unique_id=1010081365]
 layer = 20
+visible = false
 
 [node name="CRTRect" type="ColorRect" parent="CRTEffectsLayer" unique_id=524802293]
 material = SubResource("ShaderMaterial_crt")

@@ -11,6 +11,7 @@ const CANVAS_H: int = 240
 var level_up_banner_frames: int = 0
 var chameleon_ref: Node2D = null   # Chameleonノードへの参照（カーソル描画用）
 var is_dpad_aiming: bool = false
+var is_stick_aiming: bool = false
 
 func _draw() -> void:
 	var gs: Node = GameState
@@ -19,8 +20,8 @@ func _draw() -> void:
 	if gs.state == "PLAYING" and not gs.is_frozen() and gs.energy < 30.0:
 		_draw_low_hunger_warning(gs.energy)
 
-	# ターゲットカーソル（D-Pad使用中のみ）
-	if gs.state == "PLAYING" and is_dpad_aiming and chameleon_ref:
+	# ターゲットカーソル（D-Pad / スティック使用中）
+	if gs.state == "PLAYING" and (is_dpad_aiming or is_stick_aiming) and chameleon_ref:
 		_draw_target_cursor()
 
 	# レベルアップバナー

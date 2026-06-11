@@ -22,6 +22,12 @@ func _draw() -> void:
 	# --- ベース背景色 ---
 	draw_rect(Rect2(0, 0, CANVAS_W, CANVAS_H), Color(0.031, 0.031, 0.059))  # #08080f
 
+	# --- コントロール帯（下部 UI 領域の下地） ---
+	draw_rect(Rect2(0, GameLayout.PLAY_H, CANVAS_W, GameLayout.CONTROL_H),
+		Color(0.118, 0.118, 0.176))  # #1e1e2d
+	draw_line(Vector2(0, GameLayout.PLAY_H), Vector2(CANVAS_W, GameLayout.PLAY_H),
+		Color(0.616, 0.0, 1.0), 1.0)  # #9d00ff
+
 	# --- 地平線ライン（紫） ---
 	draw_line(Vector2(0, 185), Vector2(CANVAS_W, 185),
 		Color(0.616, 0.0, 1.0), 1.0)

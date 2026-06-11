@@ -15,6 +15,8 @@ const LEVEL_SCORE_THRESHOLD: int = 1200
 @onready var bug_container: Node2D = $BugContainer
 @onready var camera: Camera2D = $ScreenShakeCamera
 @onready var overlay_draw: Node2D = $HUD/OverlayDraw
+@onready var control_panel: Control = $ControlUILayer/ControlPanel
+@onready var virtual_analog_stick: VirtualAnalogStick = $ControlUILayer/ControlPanel/VirtualAnalogStick
 
 # ─── 状態変数 ────────────────────────────────────────────────
 var screen_shake: float = 0.0
@@ -28,6 +30,10 @@ var has_mouse_target: bool = false
 # D-Pad仮想ボタン押下状態（UI向け）
 var dpad_up: bool = false
 var dpad_down: bool = false
+
+# アナログスティック入力
+var stick_aiming: bool = false
+var stick_direction: Vector2 = Vector2.ZERO
 
 # ─── Bug リソースシーン ──────────────────────────────────────
 const BUG_SCRIPT: GDScript = preload("res://scripts/Bug.gd")
@@ -43,6 +49,10 @@ func _ready() -> void:
 	# OverlayDrawにChameleon参照を渡す
 	if overlay_draw:
 		overlay_draw.chameleon_ref = chameleon
+
+	if virtual_analog_stick:
+		virtual_analog_stick.aim_changed.connect(_on_stick_aim_changed)
+		virtual_analog_stick.released.connect(_on_stick_released)
 
 	# 初期バグのスポーン
 	_spawn_initial_bugs()
@@ -68,7 +78,14 @@ func _process(delta: float) -> void:
 	# OverlayDrawのD-Padフラグを更新
 	if overlay_draw:
 		overlay_draw.is_dpad_aiming = dpad_up or dpad_down
+		overlay_draw.is_stick_aiming = stick_aiming
 		overlay_draw.level_up_banner_frames = level_up_banner_frames
+
+	# スティック照準 → Chameleonへ転送
+	if stick_aiming and stick_direction.length_squared() > 0.0:
+		var pivot := Vector2(Chameleon.PIVOT_X, Chameleon.PIVOT_Y)
+		mouse_target = pivot + stick_direction.normalized() * chameleon.tongue_max_len
+		has_mouse_target = true
 
 	# 凍結中（メニュー開放中）はシミュレーション停止
 	if gs.is_frozen():
@@ -252,35 +269,43 @@ func _tick_screen_shake() -> void:
 func _screen_to_game_position(screen_pos: Vector2) -> Vector2:
 	return get_viewport().get_canvas_transform().affine_inverse() * screen_pos
 
+func _is_in_control_zone(screen_pos: Vector2) -> bool:
+	var game_pos: Vector2 = _screen_to_game_position(screen_pos)
+	return game_pos.y >= GameLayout.PLAY_H
+
 func _input(event: InputEvent) -> void:
 	var gs: Node = GameState
 
 	# マウス移動 → エイム
-	if event is InputEventMouseMotion and gs.state == "PLAYING":
-		mouse_target = get_local_mouse_position()
-		has_mouse_target = true
+	if event is InputEventMouseMotion and gs.state == "PLAYING" and not stick_aiming:
+		if not _is_in_control_zone(event.position):
+			mouse_target = get_local_mouse_position()
+			has_mouse_target = true
 
 	# マウスクリック
-	elif event is InputEventMouseButton:
-		if event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			_on_screen_tapped()
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			if not _is_in_control_zone(event.position):
+				_on_screen_tapped()
+		elif not stick_aiming:
+			has_mouse_target = false
 
 	# タッチ
 	elif event is InputEventScreenTouch:
+		if _is_in_control_zone(event.position):
+			return
 		if event.pressed:
 			mouse_target = _screen_to_game_position(event.position)
 			has_mouse_target = true
 			_on_screen_tapped()
-		else:
+		elif not stick_aiming:
 			has_mouse_target = false
 
 	elif event is InputEventScreenDrag:
+		if stick_aiming or _is_in_control_zone(event.position):
+			return
 		mouse_target = _screen_to_game_position(event.position)
 		has_mouse_target = true
-
-	# マウスがキャンバス外に出たら照準リセット
-	elif event is InputEventMouseButton and not event.pressed:
-		has_mouse_target = false
 
 	# キーボード
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -301,6 +326,24 @@ func _on_screen_tapped() -> void:
 			_reset_game()
 		"PLAYING":
 			_trigger_shoot()
+
+func _on_stick_aim_changed(direction: Vector2, _magnitude: float) -> void:
+	stick_aiming = true
+	stick_direction = direction
+
+func _on_stick_released(direction: Vector2, magnitude: float) -> void:
+	stick_aiming = false
+	stick_direction = Vector2.ZERO
+	if GameState.state != "PLAYING":
+		return
+	if magnitude < VirtualAnalogStick.DEADZONE:
+		has_mouse_target = false
+		return
+	var desired: float = atan2(direction.y, direction.x)
+	chameleon.target_angle = clamp(desired, Chameleon.ANGLE_MIN, Chameleon.ANGLE_MAX)
+	chameleon.angle = chameleon.target_angle
+	has_mouse_target = false
+	_trigger_shoot()
 
 func _trigger_shoot() -> void:
 	if GameState.state != "PLAYING":
