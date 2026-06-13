@@ -15,9 +15,11 @@ const CHAR_Y: int = 175
 const PIVOT_X: int = 56   # CHAR_X + 14
 const PIVOT_Y: int = 163  # CHAR_Y - 12
 
-# 角度制限
+# 角度制限（照準方向・atan2(dy, dx) ラジアン）
 const ANGLE_MIN: float = -PI * 0.65
 const ANGLE_MAX: float = PI * 0.15
+const AIM_DRAG_MIN: float = -PI * 0.6
+const AIM_DRAG_MAX: float = PI * 0.1
 
 # 舌パラメータ
 const TONGUE_SPEED_DEFAULT: float = 16.0
@@ -98,7 +100,7 @@ func update_chameleon(delta: float, current_bugs: Array) -> void:
 		var dx: float = mouse_target.x - PIVOT_X
 		var dy: float = mouse_target.y - PIVOT_Y
 		var desired: float = atan2(dy, dx)
-		desired = clamp(desired, -PI * 0.6, PI * 0.1)
+		desired = clamp(desired, AIM_DRAG_MIN, AIM_DRAG_MAX)
 		target_angle = desired
 	else:
 		if keys_up or keys_left:

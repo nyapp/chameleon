@@ -32,11 +32,9 @@ window/size/viewport_width=296
 window/size/viewport_height=458
 window/size/window_width_override=888
 window/size/window_height_override=1374
-window/handheld/orientation=1
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
-window/ios/hide_home_indicator=true
-window/ios/hide_status_bar=true
+window/handheld/orientation=1
 
 [input]
 
