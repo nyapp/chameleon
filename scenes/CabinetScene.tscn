@@ -8,6 +8,8 @@
 [ext_resource type="Shader" uid="uid://7pxtsvt5p46o" path="res://shaders/crt_effect.gdshader" id="6_crt"]
 [ext_resource type="Script" path="res://scripts/CabinetControlDeck.gd" id="7_deck"]
 [ext_resource type="Script" path="res://scripts/VirtualAnalogStick.gd" id="8_stick"]
+[ext_resource type="Script" path="res://scripts/CabinetPauseButton.gd" id="9_pause"]
+[ext_resource type="Script" path="res://scripts/CabinetPauseOverlay.gd" id="10_pause_overlay"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_crt"]
 shader = ExtResource("6_crt")
@@ -81,6 +83,16 @@ mouse_filter = 2
 color = Color(1, 1, 1, 1)
 material = SubResource("ShaderMaterial_crt")
 
+[node name="CabinetPauseOverlay" type="Control" parent="CabinetInner/ScreenBezel"]
+visible = false
+layout_mode = 0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 266.0
+offset_bottom = 250.0
+mouse_filter = 2
+script = ExtResource("10_pause_overlay")
+
 [node name="ControlDeck" type="Control" parent="CabinetInner"]
 layout_mode = 0
 offset_left = 14.0
@@ -98,6 +110,15 @@ offset_right = 198.0
 offset_bottom = 135.0
 mouse_filter = 0
 script = ExtResource("8_stick")
+
+[node name="CabinetPauseButton" type="Control" parent="CabinetInner/ControlDeck"]
+layout_mode = 0
+offset_left = 220.0
+offset_top = 48.0
+offset_right = 278.0
+offset_bottom = 92.0
+mouse_filter = 0
+script = ExtResource("9_pause")
 
 [node name="CabinetFrameOverlay" type="Control" parent="CabinetInner"]
 layout_mode = 0

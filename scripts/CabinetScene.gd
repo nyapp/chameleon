@@ -51,6 +51,8 @@ extends Control
 @onready var cabinet_inner: Control = $CabinetInner
 @onready var game_viewport: SubViewport = $CabinetInner/ScreenBezel/SubViewportContainer/GameSubViewport
 @onready var virtual_analog_stick: VirtualAnalogStick = $CabinetInner/ControlDeck/VirtualAnalogStick
+@onready var pause_button: CabinetPauseButton = $CabinetInner/ControlDeck/CabinetPauseButton
+@onready var pause_overlay: Control = $CabinetInner/ScreenBezel/CabinetPauseOverlay
 
 var _main_scene: Node2D
 
@@ -66,7 +68,7 @@ func _request_layout() -> void:
 		call_deferred("_apply_layout")
 
 func _apply_layout() -> void:
-	if cabinet_inner == null or virtual_analog_stick == null:
+	if cabinet_inner == null or virtual_analog_stick == null or pause_button == null or pause_overlay == null:
 		return
 
 	var vp_size := get_viewport_rect().size
@@ -119,6 +121,8 @@ func _apply_layout() -> void:
 	crt.position = svc.position
 	crt.size = svc.size
 
+	_layout_pause_overlay(pad, y_screen, viewport_pad)
+
 	var deck: Control = cabinet_inner.get_node("ControlDeck")
 	deck.position = Vector2(pad, y_control)
 	deck.size = Vector2(inner_w, control_deck_h)
@@ -130,6 +134,27 @@ func _apply_layout() -> void:
 		(inner_w - stick_size.x) * 0.5,
 		stick_y
 	)
+
+	var pause_size := pause_button.button_size
+	pause_button.position = Vector2(
+		inner_w - pause_size.x - 10.0,
+		stick_y + maxf(0.0, (stick_size.y - pause_size.y) * 0.5)
+	)
+
+func _layout_pause_overlay(pad: float, y_screen: float, viewport_pad: float) -> void:
+	if pause_overlay == null:
+		return
+
+	if not Engine.is_editor_hint():
+		if pause_overlay.get_parent() != cabinet_inner:
+			pause_overlay.reparent(cabinet_inner)
+		pause_overlay.z_index = 50
+		cabinet_inner.move_child(pause_overlay, -1)
+		pause_overlay.position = Vector2(pad + viewport_pad, y_screen + viewport_pad)
+	else:
+		pause_overlay.position = Vector2(viewport_pad, viewport_pad)
+
+	pause_overlay.size = Vector2(GameLayout.SCREEN_W, GameLayout.SCREEN_H)
 
 func _stick_size() -> Vector2:
 	var size := virtual_analog_stick.size
@@ -143,10 +168,25 @@ func _connect_game() -> void:
 	_main_scene = game_viewport.get_node_or_null("MainScene")
 	if _main_scene == null:
 		push_warning("CabinetScene: MainScene not found in SubViewport")
+		return
+	if pause_overlay and pause_overlay.has_method("bind_main_scene"):
+		pause_overlay.bind_main_scene(_main_scene)
+
+func _get_main_scene() -> Node2D:
+	if _main_scene == null:
+		_main_scene = game_viewport.get_node_or_null("MainScene")
+	return _main_scene
 
 func _connect_controls() -> void:
 	virtual_analog_stick.aim_changed.connect(_on_stick_aim_changed)
 	virtual_analog_stick.released.connect(_on_stick_released)
+	pause_button.pressed.connect(_on_pause_button_pressed)
+
+func _on_pause_button_pressed() -> void:
+	var main_scene := _get_main_scene()
+	if main_scene and main_scene.has_method("toggle_pause_menu"):
+		main_scene.toggle_pause_menu()
+		HapticManager.play_ui_tap()
 
 func _on_stick_aim_changed(direction: Vector2, magnitude: float) -> void:
 	if _main_scene and _main_scene.has_method("on_stick_aim_changed"):

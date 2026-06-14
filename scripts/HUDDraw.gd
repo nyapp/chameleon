@@ -21,7 +21,6 @@ func _draw() -> void:
 	_draw_combo(gs)
 	_draw_power_up_label(gs)
 	_draw_hunger_bar(gs)
-	_draw_level_up_banner(gs)
 
 func _game_font() -> Font:
 	return CabinetFonts.arcade_or_fallback()
@@ -109,10 +108,3 @@ func _draw_hunger_bar(gs: Node) -> void:
 	var fill_max_w: float = bar_w - INNER_PAD * 2
 	var fill_w: float = round((gs.energy / 100.0) * fill_max_w)
 	draw_rect(Rect2(BAR_X + INNER_PAD, bar_y + INNER_PAD, fill_w, BAR_H - INNER_PAD * 2), fill_color)
-
-func _draw_level_up_banner(gs: Node) -> void:
-	# MainSceneが管理するlevel_up_banner_framesを参照
-	var frames: int = get_parent().get_parent().level_up_banner_frames if get_parent().get_parent().has_method("get") else 0
-	# シンプルにGameStateのlevelを使って確認
-	# level_up_banner_framesはMainScene.gdで管理
-	pass  # MainScene側でOverlayDrawに渡す

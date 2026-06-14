@@ -32,7 +32,7 @@ script = ExtResource("5_hud")
 script = ExtResource("6_huddraw")
 
 [node name="OverlayDraw" type="Node2D" parent="HUD" unique_id=1798008854]
-z_index = 1
+z_index = 5
 script = ExtResource("7_overlay")
 
 [node name="WarningDraw" type="Node2D" parent="HUD" unique_id=1210994513]

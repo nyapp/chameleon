@@ -97,6 +97,7 @@ func _gui_input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			_active = true
+			_emit_ui_tap()
 			_update_knob(event.position)
 			accept_event()
 		else:
@@ -111,6 +112,7 @@ func _gui_input(event: InputEvent) -> void:
 			return
 		if event.pressed:
 			_active = true
+			_emit_ui_tap()
 			_update_knob(event.position)
 			accept_event()
 		elif _active:
@@ -119,6 +121,10 @@ func _gui_input(event: InputEvent) -> void:
 	elif event is InputEventMouseMotion and _active:
 		_update_knob(event.position)
 		accept_event()
+
+func _emit_ui_tap() -> void:
+	if GameState.state == "PLAYING":
+		HapticManager.play_ui_tap()
 
 func _update_knob(local_pos: Vector2) -> void:
 	var center: Vector2 = size * 0.5

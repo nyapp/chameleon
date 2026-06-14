@@ -84,7 +84,13 @@ func _save_settings() -> void:
 
 # ─── BGM ────────────────────────────────────────────────────
 func start_bgm() -> void:
-	if is_bgm_playing or not music_enabled:
+	if not music_enabled:
+		return
+	# ポーズメニュー由来の停止中は頭出しせず続きから再開する
+	if GameState.bgm_paused_by_menu:
+		resume_bgm()
+		return
+	if is_bgm_playing:
 		return
 	is_bgm_playing = true
 	_bgm_step = 0
@@ -92,6 +98,22 @@ func start_bgm() -> void:
 
 func stop_bgm() -> void:
 	is_bgm_playing = false
+	_stop_bgm_players()
+
+func pause_bgm() -> void:
+	if not is_bgm_playing:
+		return
+	is_bgm_playing = false
+	_stop_bgm_players()
+
+func resume_bgm() -> void:
+	if not music_enabled or is_bgm_playing:
+		return
+	is_bgm_playing = true
+
+func _stop_bgm_players() -> void:
+	for player in _bgm_players:
+		player.stop()
 
 func _process(delta: float) -> void:
 	if not is_bgm_playing:

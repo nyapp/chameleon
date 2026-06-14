@@ -7,6 +7,7 @@ extends Node2D
 # ─── 定数 ───────────────────────────────────────────────────
 const CANVAS_W: int = 256
 const CANVAS_H: int = 240
+const HUD_PAUSE_TAP_H: float = 28.0
 const MAX_BUGS: int = 5
 const LEVEL_SCORE_THRESHOLD: int = 1200
 
@@ -84,8 +85,6 @@ func _process(delta: float) -> void:
 		has_mouse_target = true
 
 	if gs.is_frozen():
-		chameleon.update_chameleon(delta, _get_bug_list())
-		_update_bugs_idle(delta)
 		return
 
 	_tick_screen_shake(delta)
@@ -168,6 +167,7 @@ func _process_eaten_bug(bug: Bug) -> void:
 		screen_shake = 12.0
 		chameleon.trigger_hurt(true)
 		AudioManager.play_hurt()
+		HapticManager.play_hurt()
 	else:
 		gs.flies_eaten += 1
 		gs.increment_combo()
@@ -178,6 +178,7 @@ func _process_eaten_bug(bug: Bug) -> void:
 		gs.add_energy(bug.energy_value)
 
 		AudioManager.play_eat()
+		HapticManager.play_eat()
 
 		if bug.bug_type == "firefly":
 			_trigger_random_power_up()
@@ -185,6 +186,7 @@ func _process_eaten_bug(bug: Bug) -> void:
 	if gs.check_level_up():
 		level_up_banner_time = GameState.LEVEL_UP_BANNER_DURATION
 		AudioManager.play_powerup()
+		HapticManager.play_powerup()
 		var bug_count: int = bug_container.get_child_count()
 		if gs.level <= 4 and bug_count < MAX_BUGS + 2:
 			_spawn_bug(_get_extra_bug_type(gs.level))
@@ -199,6 +201,7 @@ func _trigger_random_power_up() -> void:
 	var chosen: String = power_ups[randi() % power_ups.size()]
 	GameState.activate_power_up(chosen)
 	AudioManager.play_powerup()
+	HapticManager.play_powerup()
 
 func _on_power_up_activated(power_type: String) -> void:
 	chameleon.activate_power_up(power_type)
@@ -208,8 +211,10 @@ func _on_power_up_deactivated() -> void:
 
 # ─── ゲームオーバー ───────────────────────────────────────────
 func _on_game_over() -> void:
+	GameState.bgm_paused_by_menu = false
 	AudioManager.stop_bgm()
 	AudioManager.play_game_over()
+	HapticManager.play_game_over()
 	game_over_shake_time = GameState.GAME_OVER_SHAKE_DURATION
 	screen_shake = max(screen_shake, 12.0)
 
@@ -240,19 +245,32 @@ func _tick_screen_shake(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	var gs: Node = GameState
 
+	if gs.state == "PAUSED":
+		if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+			_toggle_pause()
+		return
+
 	if event is InputEventMouseMotion and gs.state == "PLAYING" and not stick_aiming:
 		mouse_target = get_local_mouse_position()
 		has_mouse_target = true
 
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
+			var local_pos: Vector2 = get_local_mouse_position()
+			if gs.state == "PLAYING" and _is_hud_pause_zone(local_pos):
+				_toggle_pause()
+				return
 			_on_screen_tapped()
 		elif not stick_aiming:
 			has_mouse_target = false
 
 	elif event is InputEventScreenTouch:
 		if event.pressed:
-			mouse_target = get_viewport().get_canvas_transform().affine_inverse() * event.position
+			var local_pos: Vector2 = get_viewport().get_canvas_transform().affine_inverse() * event.position
+			if gs.state == "PLAYING" and _is_hud_pause_zone(local_pos):
+				_toggle_pause()
+				return
+			mouse_target = local_pos
 			has_mouse_target = true
 			_on_screen_tapped()
 		elif not stick_aiming:
@@ -267,11 +285,13 @@ func _input(event: InputEvent) -> void:
 			KEY_SPACE:
 				_on_screen_tapped()
 			KEY_ESCAPE:
-				if gs.state in ["PLAYING", "PAUSED"]:
+				if gs.state == "PLAYING":
 					_toggle_pause()
 
+func _is_hud_pause_zone(local_pos: Vector2) -> bool:
+	return local_pos.y >= 0.0 and local_pos.y <= HUD_PAUSE_TAP_H
+
 func _on_screen_tapped() -> void:
-	AudioManager.start_bgm()
 	match GameState.state:
 		"TITLE":
 			_start_game()
@@ -285,9 +305,11 @@ func _trigger_shoot() -> void:
 		return
 	if chameleon.shoot():
 		AudioManager.play_shoot()
+		HapticManager.play_shoot()
 
 # ─── ゲーム開始・リセット ────────────────────────────────────
 func _start_game() -> void:
+	GameState.bgm_paused_by_menu = false
 	GameState.start_game()
 	chameleon.deactivate_power_up()
 	screen_shake = 0.0
@@ -299,16 +321,24 @@ func _reset_game() -> void:
 	await get_tree().create_timer(0.3).timeout
 	_start_game()
 
+func toggle_pause_menu() -> void:
+	if GameState.state in ["PLAYING", "PAUSED"]:
+		_toggle_pause()
+
 # ─── ポーズ ──────────────────────────────────────────────────
 func _toggle_pause() -> void:
 	if GameState.state == "PLAYING":
 		GameState.frozen_by_menu = true
 		GameState.set_state("PAUSED")
-		AudioManager.stop_bgm()
+		if AudioManager.is_bgm_playing:
+			GameState.bgm_paused_by_menu = true
+			AudioManager.pause_bgm()
 	elif GameState.state == "PAUSED":
 		GameState.frozen_by_menu = false
 		GameState.set_state("PLAYING")
-		AudioManager.start_bgm()
+		if GameState.bgm_paused_by_menu:
+			GameState.bgm_paused_by_menu = false
+			AudioManager.resume_bgm()
 
 # ─── バグ管理 ────────────────────────────────────────────────
 func _spawn_initial_bugs() -> void:

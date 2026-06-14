@@ -24,6 +24,7 @@ config/icon="res://icon.svg"
 
 GameState="*res://scripts/GameState.gd"
 AudioManager="*res://scripts/AudioManager.gd"
+HapticManager="*res://scripts/HapticManager.gd"
 GameLayout="*res://scripts/GameLayout.gd"
 CabinetFonts="*res://scripts/CabinetFonts.gd"
 

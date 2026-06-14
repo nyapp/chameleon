@@ -37,16 +37,6 @@ func _draw() -> void:
 			_draw_title_screen()
 		"GAMEOVER":
 			_draw_game_over_screen(gs)
-		"PAUSED":
-			_draw_paused_overlay()
-
-func _draw_paused_overlay() -> void:
-	var font := _game_font()
-	draw_rect(Rect2(0, 0, CANVAS_W, CANVAS_H), Color(0, 0, 0, 0.45))
-	draw_string(font,
-		Vector2(0, CANVAS_H / 2.0),
-		"PAUSED", HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 10,
-		Color(0.0, 0.941, 1.0))  # #00f0ff
 
 func _draw_title_screen() -> void:
 	var font := _game_font()
