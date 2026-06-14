@@ -9,7 +9,7 @@ extends Control
 	set(value):
 		cabinet_pad = value
 		_request_layout()
-@export var marquee_h: int = 52:
+@export var marquee_h: int = 58:
 	set(value):
 		marquee_h = value
 		_request_layout()

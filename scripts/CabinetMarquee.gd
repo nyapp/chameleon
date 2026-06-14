@@ -13,42 +13,55 @@ extends Control
 	set(value):
 		subtitle_text = value
 		queue_redraw()
-@export var title_font_size: int = 11:
+@export var title_font_size: int = 13:
 	set(value):
 		title_font_size = value
 		queue_redraw()
-@export var subtitle_font_size: int = 6:
+@export var subtitle_font_size: int = 7:
 	set(value):
 		subtitle_font_size = value
 		queue_redraw()
-@export_range(0.0, 1.0) var title_y_ratio: float = 0.32:
+@export var subtitle_letter_spacing: float = 2.5:
+	set(value):
+		subtitle_letter_spacing = value
+		queue_redraw()
+@export_range(0.0, 1.0) var title_y_ratio: float = 0.38:
 	set(value):
 		title_y_ratio = value
 		queue_redraw()
-@export_range(0.0, 1.0) var subtitle_y_ratio: float = 0.68:
+@export_range(0.0, 1.0) var subtitle_y_ratio: float = 0.78:
 	set(value):
 		subtitle_y_ratio = value
+		queue_redraw()
+
+@export_group("Shape")
+@export var corner_radius: float = 8.0:
+	set(value):
+		corner_radius = value
+		queue_redraw()
+@export var border_width: float = 3.0:
+	set(value):
+		border_width = value
+		queue_redraw()
+@export var inner_glow_inset: float = 3.0:
+	set(value):
+		inner_glow_inset = value
 		queue_redraw()
 
 @export_group("Animation")
 @export var pulse_speed: float = 2.0:
 	set(value):
 		pulse_speed = value
-@export var glow_alpha_min: float = 0.4:
+@export var sweep_speed: float = 8.0:
+	set(value):
+		sweep_speed = value
+@export var glow_alpha_min: float = 0.35:
 	set(value):
 		glow_alpha_min = value
 		queue_redraw()
-@export var glow_alpha_range: float = 0.3:
+@export var glow_alpha_range: float = 0.45:
 	set(value):
 		glow_alpha_range = value
-		queue_redraw()
-@export var glow_spread_step: float = 1.5:
-	set(value):
-		glow_spread_step = value
-		queue_redraw()
-@export var glow_layers: int = 3:
-	set(value):
-		glow_layers = maxi(value, 0)
 		queue_redraw()
 
 @export_group("Colors")
@@ -60,70 +73,163 @@ extends Control
 	set(value):
 		border_color = value
 		queue_redraw()
-@export var border_width: float = 2.0:
-	set(value):
-		border_width = value
-		queue_redraw()
-@export var inner_glow_alpha: float = 0.06:
+@export var inner_glow_alpha: float = 0.1:
 	set(value):
 		inner_glow_alpha = value
-		queue_redraw()
-@export var inner_glow_inset: float = 3.0:
-	set(value):
-		inner_glow_inset = value
 		queue_redraw()
 @export var neon_pink: Color = Color(1.0, 0.0, 0.498):
 	set(value):
 		neon_pink = value
 		queue_redraw()
+@export var neon_purple: Color = Color(0.616, 0.0, 1.0):
+	set(value):
+		neon_purple = value
+		queue_redraw()
 @export var neon_cyan: Color = Color(0.0, 0.941, 1.0):
 	set(value):
 		neon_cyan = value
 		queue_redraw()
-@export var title_tint_alpha: float = 0.5:
+@export var sweep_alpha: float = 0.05:
 	set(value):
-		title_tint_alpha = value
-		queue_redraw()
-@export var subtitle_alpha: float = 0.85:
-	set(value):
-		subtitle_alpha = value
+		sweep_alpha = value
 		queue_redraw()
 
 var _pulse: float = 0.0
+var _sweep: float = 0.0
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	clip_contents = true
 	queue_redraw()
 
 func _process(delta: float) -> void:
-	if Engine.is_editor_hint():
-		_pulse += delta
-		queue_redraw()
-	elif pulse_speed > 0.0:
-		_pulse += delta
+	var needs_redraw := false
+	if pulse_speed > 0.0:
+		_pulse += delta * pulse_speed
+		needs_redraw = true
+	if sweep_speed > 0.0:
+		_sweep = fmod(_sweep + delta / sweep_speed, 1.0)
+		needs_redraw = true
+	if needs_redraw:
 		queue_redraw()
 
 func _draw() -> void:
-	var r := Rect2(Vector2.ZERO, size)
-	draw_rect(r, bg_color)
-	draw_rect(r, border_color, false, border_width)
+	var panel := Rect2(Vector2.ZERO, size)
+	_draw_rounded_rect(panel, bg_color, corner_radius, true)
+	_draw_rounded_rect(panel, border_color, corner_radius, false, border_width)
 
-	draw_rect(r.grow(-inner_glow_inset), Color(neon_cyan.r, neon_cyan.g, neon_cyan.b, inner_glow_alpha), false, 1.0)
+	var inner := panel.grow(-inner_glow_inset)
+	_draw_rounded_rect(inner, Color(neon_cyan.r, neon_cyan.g, neon_cyan.b, inner_glow_alpha), corner_radius - 1.0, false, 1.0)
+
+	_draw_sweep(panel)
 
 	var font: Font = ThemeDB.fallback_font
-	var title_w := font.get_string_size(title_text, HORIZONTAL_ALIGNMENT_CENTER, -1, title_font_size).x
-	var sub_w := font.get_string_size(subtitle_text, HORIZONTAL_ALIGNMENT_CENTER, -1, subtitle_font_size).x
-
-	var pulse := 0.5 + 0.5 * sin(_pulse * pulse_speed)
+	var pulse := 0.5 + 0.5 * sin(_pulse)
 	var glow_alpha := glow_alpha_min + pulse * glow_alpha_range
 
+	var title_w := font.get_string_size(title_text, HORIZONTAL_ALIGNMENT_LEFT, -1, title_font_size).x
 	var title_pos := Vector2((size.x - title_w) * 0.5, size.y * title_y_ratio)
-	for i in glow_layers:
-		var spread := float(i + 1) * glow_spread_step
-		draw_string(font, title_pos + Vector2(-spread, 0), title_text, HORIZONTAL_ALIGNMENT_LEFT, -1, title_font_size, Color(neon_pink.r, neon_pink.g, neon_pink.b, glow_alpha * 0.25))
-		draw_string(font, title_pos + Vector2(spread, 0), title_text, HORIZONTAL_ALIGNMENT_LEFT, -1, title_font_size, Color(neon_pink.r, neon_pink.g, neon_pink.b, glow_alpha * 0.25))
-	draw_string(font, title_pos, title_text, HORIZONTAL_ALIGNMENT_LEFT, -1, title_font_size, Color(1, 1, 1, 0.95))
-	draw_string(font, title_pos, title_text, HORIZONTAL_ALIGNMENT_LEFT, -1, title_font_size, Color(neon_pink.r, neon_pink.g, neon_pink.b, glow_alpha * title_tint_alpha))
+	_draw_neon_title(font, title_text, title_pos, title_font_size, glow_alpha)
 
+	var sub_w := _spaced_text_width(font, subtitle_text, subtitle_font_size, subtitle_letter_spacing)
 	var sub_pos := Vector2((size.x - sub_w) * 0.5, size.y * subtitle_y_ratio)
-	draw_string(font, sub_pos, subtitle_text, HORIZONTAL_ALIGNMENT_LEFT, -1, subtitle_font_size, Color(neon_cyan.r, neon_cyan.g, neon_cyan.b, subtitle_alpha))
+	_draw_spaced_neon_text(font, subtitle_text, sub_pos, subtitle_font_size, subtitle_letter_spacing, neon_cyan, 0.85)
+
+func _draw_rounded_rect(rect: Rect2, color: Color, radius: float, filled: bool, line_width: float = 1.0) -> void:
+	var style := StyleBoxFlat.new()
+	style.set_corner_radius_all(maxi(int(radius), 0))
+	if filled:
+		style.bg_color = color
+	else:
+		style.bg_color = Color.TRANSPARENT
+		style.border_color = color
+		style.set_border_width_all(maxi(int(line_width), 1))
+	style.draw(get_canvas_item(), rect)
+
+func _draw_sweep(panel: Rect2) -> void:
+	var span := maxf(panel.size.x, panel.size.y) * 2.0
+	var offset := lerpf(-span, span, _sweep)
+	var stripe_w := span * 0.08
+	var center := panel.get_center() + Vector2(offset, offset)
+	var half := span * 0.5
+	var points := PackedVector2Array([
+		center + Vector2(-half, -stripe_w),
+		center + Vector2(half, -stripe_w),
+		center + Vector2(half, stripe_w),
+		center + Vector2(-half, stripe_w),
+	])
+	draw_colored_polygon(points, Color(1.0, 1.0, 1.0, sweep_alpha))
+
+func _draw_neon_title(font: Font, text: String, pos: Vector2, font_size: int, glow_alpha: float) -> void:
+	var spreads := [4.0, 3.0, 2.0, 1.0]
+	for spread in spreads:
+		var alpha: float = glow_alpha * (0.12 + (4.0 - spread) * 0.06)
+		var glow_col := neon_purple if spread <= 2.0 else neon_pink
+		for ox in [-spread, 0.0, spread]:
+			for oy in [-spread * 0.5, 0.0, spread * 0.5]:
+				if is_zero_approx(ox) and is_zero_approx(oy):
+					continue
+				draw_string(
+					font,
+					pos + Vector2(ox, oy),
+					text,
+					HORIZONTAL_ALIGNMENT_LEFT,
+					-1,
+					font_size,
+					Color(glow_col.r, glow_col.g, glow_col.b, alpha)
+				)
+
+	draw_string(font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(1.0, 1.0, 1.0, 0.95))
+	draw_string(
+		font,
+		pos,
+		text,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1,
+		font_size,
+		Color(neon_pink.r, neon_pink.g, neon_pink.b, glow_alpha * 0.55)
+	)
+
+func _spaced_text_width(font: Font, text: String, font_size: int, spacing: float) -> float:
+	if text.is_empty():
+		return 0.0
+	var total := 0.0
+	for i in text.length():
+		total += font.get_string_size(text[i], HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+		if i < text.length() - 1:
+			total += spacing
+	return total
+
+func _draw_spaced_neon_text(
+	font: Font,
+	text: String,
+	pos: Vector2,
+	font_size: int,
+	spacing: float,
+	color: Color,
+	alpha: float
+) -> void:
+	var x := pos.x
+	for i in text.length():
+		var ch := text[i]
+		var ch_pos := Vector2(x, pos.y)
+		for spread in [2.0, 1.0]:
+			draw_string(
+				font,
+				ch_pos + Vector2(0.0, spread * 0.5),
+				ch,
+				HORIZONTAL_ALIGNMENT_LEFT,
+				-1,
+				font_size,
+				Color(color.r, color.g, color.b, alpha * 0.2)
+			)
+		draw_string(
+			font,
+			ch_pos,
+			ch,
+			HORIZONTAL_ALIGNMENT_LEFT,
+			-1,
+			font_size,
+			Color(color.r, color.g, color.b, alpha)
+		)
+		x += font.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x + spacing
