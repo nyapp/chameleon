@@ -9,24 +9,24 @@ signal aim_changed(direction: Vector2, magnitude: float)
 signal released(direction: Vector2, magnitude: float)
 
 @export_group("Feel")
-@export var radius: float = 28.0:
+@export var radius: float = 50.0:
 	set(value):
 		radius = value
 		_update_size()
 @export var deadzone: float = 0.25:
 	set(value):
 		deadzone = value
-@export var knob_max: float = 22.0:
+@export var knob_max: float = 39.0:
 	set(value):
 		knob_max = value
 @export var invert_aim: bool = true
 
 @export_group("Knob")
-@export var knob_outer_radius: float = 10.0:
+@export var knob_outer_radius: float = 18.0:
 	set(value):
 		knob_outer_radius = value
 		queue_redraw()
-@export var knob_inner_radius: float = 8.0:
+@export var knob_inner_radius: float = 14.0:
 	set(value):
 		knob_inner_radius = value
 		queue_redraw()
@@ -66,7 +66,7 @@ signal released(direction: Vector2, magnitude: float)
 	set(value):
 		operable_edge_color = value
 		queue_redraw()
-@export var operable_arc_width: float = 2.0:
+@export var operable_arc_width: float = 3.5:
 	set(value):
 		operable_arc_width = value
 		queue_redraw()

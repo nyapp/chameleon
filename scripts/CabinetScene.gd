@@ -34,12 +34,6 @@ extends Control
 		control_gap = value
 		_request_layout()
 
-@export_group("Controls")
-@export var stick_offset_y: float = 30.0:
-	set(value):
-		stick_offset_y = value
-		_request_layout()
-
 @export_group("Background")
 @export var page_bg_color: Color = Color(0.039, 0.039, 0.078): # #0a0a14
 	set(value):
@@ -129,10 +123,20 @@ func _apply_layout() -> void:
 	deck.position = Vector2(pad, y_control)
 	deck.size = Vector2(inner_w, control_deck_h)
 
+	var stick_size := _stick_size()
+	var content_h := float(control_deck_h) - float(GameLayout.CONTROL_DECK_HEADER_H)
+	var stick_y := float(GameLayout.CONTROL_DECK_HEADER_H) + maxf(0.0, (content_h - stick_size.y) * 0.5)
 	virtual_analog_stick.position = Vector2(
-		(inner_w - virtual_analog_stick.size.x) * 0.5,
-		stick_offset_y
+		(inner_w - stick_size.x) * 0.5,
+		stick_y
 	)
+
+func _stick_size() -> Vector2:
+	var size := virtual_analog_stick.size
+	if size.x > 0.0 and size.y > 0.0:
+		return size
+	var diameter := virtual_analog_stick.radius * 2.0
+	return Vector2(diameter, diameter)
 
 func _connect_game() -> void:
 	await get_tree().process_frame

@@ -30,9 +30,9 @@ CabinetFonts="*res://scripts/CabinetFonts.gd"
 [display]
 
 window/size/viewport_width=326
-window/size/viewport_height=532
+window/size/viewport_height=572
 window/size/window_width_override=978
-window/size/window_height_override=1596
+window/size/window_height_override=1716
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation=1
