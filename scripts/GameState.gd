@@ -68,6 +68,19 @@ func start_game() -> void:
 	power_up_time_left = 0.0
 	set_state("PLAYING")
 
+func return_to_title() -> void:
+	score = 0
+	flies_eaten = 0
+	level = 1
+	energy = 100.0
+	combo = 0
+	combo_timer = 0.0
+	power_up_type = ""
+	power_up_time_left = 0.0
+	frozen_by_menu = false
+	bgm_paused_by_menu = false
+	set_state("TITLE")
+
 func trigger_game_over() -> void:
 	if score > high_score:
 		high_score = score

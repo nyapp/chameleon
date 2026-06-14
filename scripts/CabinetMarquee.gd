@@ -94,6 +94,8 @@ extends Control
 		sweep_alpha = value
 		queue_redraw()
 
+const CabinetFontsScript := preload("res://scripts/CabinetFonts.gd")
+
 var _pulse: float = 0.0
 var _sweep: float = 0.0
 
@@ -114,7 +116,7 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 func _font_arcade() -> Font:
-	return CabinetFonts.arcade_or_fallback()
+	return CabinetFontsScript.get_arcade_font()
 
 func _draw() -> void:
 	var panel := Rect2(Vector2.ZERO, size)

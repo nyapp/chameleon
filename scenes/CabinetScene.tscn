@@ -1,15 +1,15 @@
 [gd_scene format=3 uid="uid://cipcqm4o1rjtm"]
 
-[ext_resource type="Script" path="res://scripts/CabinetScene.gd" id="1_cabinet"]
-[ext_resource type="Script" path="res://scripts/CabinetFrameDraw.gd" id="2_frame"]
-[ext_resource type="Script" path="res://scripts/CabinetMarquee.gd" id="3_marquee"]
-[ext_resource type="Script" path="res://scripts/CabinetScreenBezel.gd" id="4_bezel"]
+[ext_resource type="Script" uid="uid://d0ahwueyi4bmi" path="res://scripts/CabinetScene.gd" id="1_cabinet"]
+[ext_resource type="Script" uid="uid://cuofeef0ltwa2" path="res://scripts/CabinetFrameDraw.gd" id="2_frame"]
+[ext_resource type="Script" uid="uid://dsnuqejd53pjo" path="res://scripts/CabinetMarquee.gd" id="3_marquee"]
+[ext_resource type="Script" uid="uid://d23osji3y311q" path="res://scripts/CabinetScreenBezel.gd" id="4_bezel"]
 [ext_resource type="PackedScene" uid="uid://d1xsmif81iqrf" path="res://scenes/MainScene.tscn" id="5_main"]
 [ext_resource type="Shader" uid="uid://7pxtsvt5p46o" path="res://shaders/crt_effect.gdshader" id="6_crt"]
-[ext_resource type="Script" path="res://scripts/CabinetControlDeck.gd" id="7_deck"]
-[ext_resource type="Script" path="res://scripts/VirtualAnalogStick.gd" id="8_stick"]
-[ext_resource type="Script" path="res://scripts/CabinetPauseButton.gd" id="9_pause"]
-[ext_resource type="Script" path="res://scripts/CabinetPauseOverlay.gd" id="10_pause_overlay"]
+[ext_resource type="Script" uid="uid://bhj87lcup12po" path="res://scripts/CabinetControlDeck.gd" id="7_deck"]
+[ext_resource type="Script" uid="uid://0nkjlt4rcl4m" path="res://scripts/VirtualAnalogStick.gd" id="8_stick"]
+[ext_resource type="Script" uid="uid://horu74i16gws" path="res://scripts/CabinetPauseButton.gd" id="9_pause"]
+[ext_resource type="Script" uid="uid://c6qghfvyxr05g" path="res://scripts/CabinetPauseOverlay.gd" id="10_pause_overlay"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_crt"]
 shader = ExtResource("6_crt")
@@ -18,7 +18,7 @@ shader_parameter/scanline_alpha = 0.25
 shader_parameter/scanline_density = 120.0
 shader_parameter/vignette_strength = 0.85
 
-[node name="CabinetRoot" type="Control"]
+[node name="CabinetRoot" type="Control" unique_id=1960936530]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -27,104 +27,106 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_cabinet")
 
-[node name="CabinetInner" type="Control" parent="."]
-layout_mode = 0
-offset_right = 296.0
-offset_bottom = 498.0
-
-[node name="CabinetFrame" type="Control" parent="CabinetInner"]
-layout_mode = 0
+[node name="CabinetInner" type="Control" parent="." unique_id=824317603]
+clip_contents = true
 anchors_preset = 0
-offset_right = 296.0
-offset_bottom = 498.0
+offset_left = 568.0
+offset_top = 250.0
+offset_right = 894.0
+offset_bottom = 806.0
+
+[node name="CabinetFrame" type="Control" parent="CabinetInner" unique_id=1875028892]
+anchors_preset = 0
+offset_right = 326.0
+offset_bottom = 556.0
 mouse_filter = 2
 script = ExtResource("2_frame")
 
-[node name="MarqueePanel" type="Control" parent="CabinetInner"]
-layout_mode = 0
-offset_left = 14.0
-offset_top = 14.0
-offset_right = 282.0
-offset_bottom = 66.0
+[node name="MarqueePanel" type="Control" parent="CabinetInner" unique_id=1412521683]
+clip_contents = true
+anchors_preset = 0
+offset_left = 15.0
+offset_top = 15.0
+offset_right = 311.0
+offset_bottom = 83.0
 mouse_filter = 2
 script = ExtResource("3_marquee")
 
-[node name="ScreenBezel" type="Control" parent="CabinetInner"]
-layout_mode = 0
-offset_left = 14.0
-offset_top = 66.0
-offset_right = 282.0
-offset_bottom = 326.0
+[node name="ScreenBezel" type="Control" parent="CabinetInner" unique_id=648474410]
+clip_contents = true
+anchors_preset = 0
+offset_left = 15.0
+offset_top = 98.0
+offset_right = 311.0
+offset_bottom = 378.0
 mouse_filter = 2
 script = ExtResource("4_bezel")
 
-[node name="SubViewportContainer" type="SubViewportContainer" parent="CabinetInner/ScreenBezel"]
+[node name="SubViewportContainer" type="SubViewportContainer" parent="CabinetInner/ScreenBezel" unique_id=1580462172]
 layout_mode = 0
-offset_left = 10.0
-offset_top = 10.0
-offset_right = 266.0
-offset_bottom = 250.0
-stretch = false
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 276.0
+offset_bottom = 260.0
 
-[node name="GameSubViewport" type="SubViewport" parent="CabinetInner/ScreenBezel/SubViewportContainer"]
-handle_input_locally = true
+[node name="GameSubViewport" type="SubViewport" parent="CabinetInner/ScreenBezel/SubViewportContainer" unique_id=2085671788]
 size = Vector2i(256, 240)
 render_target_update_mode = 4
 
-[node name="MainScene" parent="CabinetInner/ScreenBezel/SubViewportContainer/GameSubViewport" instance=ExtResource("5_main")]
+[node name="MainScene" parent="CabinetInner/ScreenBezel/SubViewportContainer/GameSubViewport" unique_id=867637238 instance=ExtResource("5_main")]
 
-[node name="CRTEffectOverlay" type="ColorRect" parent="CabinetInner/ScreenBezel"]
-layout_mode = 0
-offset_left = 10.0
-offset_top = 10.0
-offset_right = 266.0
-offset_bottom = 250.0
-mouse_filter = 2
-color = Color(1, 1, 1, 1)
+[node name="CRTEffectOverlay" type="ColorRect" parent="CabinetInner/ScreenBezel" unique_id=1149596501]
 material = SubResource("ShaderMaterial_crt")
-
-[node name="CabinetPauseOverlay" type="Control" parent="CabinetInner/ScreenBezel"]
-visible = false
 layout_mode = 0
-offset_left = 10.0
-offset_top = 10.0
-offset_right = 266.0
-offset_bottom = 250.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 276.0
+offset_bottom = 260.0
+mouse_filter = 2
+
+[node name="CabinetPauseOverlay" type="Control" parent="CabinetInner/ScreenBezel" unique_id=813131345]
+visible = false
+anchors_preset = 0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 276.0
+offset_bottom = 260.0
 mouse_filter = 2
 script = ExtResource("10_pause_overlay")
 
-[node name="ControlDeck" type="Control" parent="CabinetInner"]
-layout_mode = 0
-offset_left = 14.0
-offset_top = 336.0
-offset_right = 282.0
-offset_bottom = 484.0
+[node name="ControlDeck" type="Control" parent="CabinetInner" unique_id=685604125]
+clip_contents = true
+anchors_preset = 0
+offset_left = 15.0
+offset_top = 393.0
+offset_right = 311.0
+offset_bottom = 541.0
 mouse_filter = 2
 script = ExtResource("7_deck")
 
-[node name="VirtualAnalogStick" type="Control" parent="CabinetInner/ControlDeck"]
-layout_mode = 0
+[node name="VirtualAnalogStick" type="Control" parent="CabinetInner/ControlDeck" unique_id=1690637287]
+custom_minimum_size = Vector2(100, 100)
+anchors_preset = 0
 offset_left = 98.0
 offset_top = 35.0
 offset_right = 198.0
 offset_bottom = 135.0
-mouse_filter = 0
 script = ExtResource("8_stick")
 
-[node name="CabinetPauseButton" type="Control" parent="CabinetInner/ControlDeck"]
-layout_mode = 0
-offset_left = 220.0
-offset_top = 48.0
-offset_right = 278.0
-offset_bottom = 92.0
-mouse_filter = 0
+[node name="CabinetPauseButton" type="Control" parent="CabinetInner/ControlDeck" unique_id=1325334087]
+z_index = 10
+custom_minimum_size = Vector2(52, 20)
+anchors_preset = 0
+offset_left = 232.0
+offset_top = 4.0
+offset_right = 284.0
+offset_bottom = 24.0
 script = ExtResource("9_pause")
 
-[node name="CabinetFrameOverlay" type="Control" parent="CabinetInner"]
-layout_mode = 0
+[node name="CabinetFrameOverlay" type="Control" parent="CabinetInner" unique_id=919860641]
 anchors_preset = 0
-offset_right = 296.0
-offset_bottom = 498.0
+offset_right = 326.0
+offset_bottom = 556.0
 mouse_filter = 2
 script = ExtResource("2_frame")
 overlay_only = true

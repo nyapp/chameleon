@@ -7,10 +7,20 @@ extends Node
 
 # ─── 定数 ───────────────────────────────────────────────────
 const SAMPLE_RATE: int = 22050       # 軽量な低サンプルレート
-const MASTER_SFX_VOLUME: float = 0.4
-const MASTER_BGM_VOLUME: float = 0.8
 const TEMPO: int = 120
 const STEP_TIME: float = 60.0 / TEMPO / 2.0  # 8分音符（0.25秒）
+
+const DEFAULT_MASTER_BGM_VOLUME: float = 0.8
+const DEFAULT_MASTER_SFX_VOLUME: float = 0.4
+const DEFAULT_BGM_BASS_VOLUME: float = 0.10
+const DEFAULT_BGM_LEAD_VOLUME: float = 0.06
+const DEFAULT_BGM_SNARE_VOLUME: float = 0.05
+const DEFAULT_BGM_HIHAT_VOLUME: float = 0.01
+const DEFAULT_SFX_SHOOT_VOLUME: float = 0.8
+const DEFAULT_SFX_EAT_VOLUME: float = 0.8
+const DEFAULT_SFX_HURT_VOLUME: float = 0.8
+const DEFAULT_SFX_POWERUP_VOLUME: float = 0.05
+const DEFAULT_SFX_GAME_OVER_VOLUME: float = 0.08
 
 # ─── BGM シーケンスデータ（JSと同一） ────────────────────────
 const BASSLINE: Array = [
@@ -43,8 +53,44 @@ var _sfx_pool_index: int = 0
 # ─── BGMプール ───────────────────────────────────────────────
 var _bgm_players: Array[AudioStreamPlayer] = []
 const BGM_POOL_SIZE: int = 16
+var _tuning: AudioTuning = null
 
 # ─── 初期化 ─────────────────────────────────────────────────
+func bind_tuning(tuning: AudioTuning) -> void:
+	_tuning = tuning
+
+func _master_bgm_volume() -> float:
+	return _tuning.master_bgm_volume if _tuning else DEFAULT_MASTER_BGM_VOLUME
+
+func _master_sfx_volume() -> float:
+	return _tuning.master_sfx_volume if _tuning else DEFAULT_MASTER_SFX_VOLUME
+
+func _bgm_bass_volume() -> float:
+	return _tuning.bgm_bass_volume if _tuning else DEFAULT_BGM_BASS_VOLUME
+
+func _bgm_lead_volume() -> float:
+	return _tuning.bgm_lead_volume if _tuning else DEFAULT_BGM_LEAD_VOLUME
+
+func _bgm_snare_volume() -> float:
+	return _tuning.bgm_snare_volume if _tuning else DEFAULT_BGM_SNARE_VOLUME
+
+func _bgm_hihat_volume() -> float:
+	return _tuning.bgm_hihat_volume if _tuning else DEFAULT_BGM_HIHAT_VOLUME
+
+func _sfx_shoot_volume() -> float:
+	return _tuning.sfx_shoot_volume if _tuning else DEFAULT_SFX_SHOOT_VOLUME
+
+func _sfx_eat_volume() -> float:
+	return _tuning.sfx_eat_volume if _tuning else DEFAULT_SFX_EAT_VOLUME
+
+func _sfx_hurt_volume() -> float:
+	return _tuning.sfx_hurt_volume if _tuning else DEFAULT_SFX_HURT_VOLUME
+
+func _sfx_powerup_volume() -> float:
+	return _tuning.sfx_powerup_volume if _tuning else DEFAULT_SFX_POWERUP_VOLUME
+
+func _sfx_game_over_volume() -> float:
+	return _tuning.sfx_game_over_volume if _tuning else DEFAULT_SFX_GAME_OVER_VOLUME
 func _ready() -> void:
 	_build_sfx_pool()
 	_build_bgm_pool()
@@ -61,7 +107,7 @@ func _build_bgm_pool() -> void:
 	for i in BGM_POOL_SIZE:
 		var player := AudioStreamPlayer.new()
 		player.bus = "BGM" if AudioServer.get_bus_index("BGM") >= 0 else "Master"
-		player.volume_db = linear_to_db(bgm_volume * MASTER_BGM_VOLUME)
+		player.volume_db = linear_to_db(bgm_volume * _master_bgm_volume())
 		add_child(player)
 		_bgm_players.append(player)
 
@@ -127,18 +173,18 @@ func _play_bgm_step() -> void:
 	# ベースライン（2ステップに1回）
 	if _bgm_step % 2 == 0:
 		var bass_freq: float = BASSLINE[(_bgm_step / 2) % BASSLINE.size()]
-		_play_bgm_note(bass_freq, "sawtooth", 0.15, 0.10)
+		_play_bgm_note(bass_freq, "sawtooth", 0.15, _bgm_bass_volume())
 
 	# リードメロディ
 	var lead_freq: float = LEAD_MELODY[_bgm_step % LEAD_MELODY.size()]
 	if lead_freq > 0.0:
-		_play_bgm_note(lead_freq, "square", 0.18, 0.06)
+		_play_bgm_note(lead_freq, "square", 0.18, _bgm_lead_volume())
 
 	# ノイズ系パーカッション
 	if _bgm_step % 4 == 2:
-		_play_bgm_noise(0.05)   # スネア
+		_play_bgm_noise(_bgm_snare_volume())
 	elif _bgm_step % 2 == 0:
-		_play_bgm_noise(0.01)   # ハイハット
+		_play_bgm_noise(_bgm_hihat_volume())
 
 	_bgm_step += 1
 
@@ -146,19 +192,19 @@ func _play_bgm_step() -> void:
 func play_shoot() -> void:
 	if not sfx_enabled: return
 	# triangle wave: 220Hz→1200Hz slide
-	var stream := _make_sweep(220.0, 1200.0, 0.12, "triangle")
+	var stream := _make_sweep(220.0, 1200.0, 0.12, "triangle", _sfx_shoot_volume())
 	_play_sfx(stream)
 
 func play_eat() -> void:
 	if not sfx_enabled: return
 	# square wave: 600→300→150 stepdown
-	var stream := _make_step_down([600.0, 300.0, 150.0], 0.04, 0.12, "square")
+	var stream := _make_step_down([600.0, 300.0, 150.0], 0.04, 0.12, "square", _sfx_eat_volume())
 	_play_sfx(stream)
 
 func play_hurt() -> void:
 	if not sfx_enabled: return
 	# sawtooth: 400Hz→80Hz descend
-	var stream := _make_sweep(400.0, 80.0, 0.35, "sawtooth")
+	var stream := _make_sweep(400.0, 80.0, 0.35, "sawtooth", _sfx_hurt_volume())
 	_play_sfx(stream)
 
 func play_powerup() -> void:
@@ -166,7 +212,7 @@ func play_powerup() -> void:
 	# C major arpeggio
 	var notes: Array = [261.63, 329.63, 392.0, 523.25, 659.25, 783.99, 1046.5]
 	for i in notes.size():
-		var s: AudioStreamWAV = _make_tone(notes[i], "square", 0.12, 0.05)
+		var s: AudioStreamWAV = _make_tone(notes[i], "square", 0.12, _sfx_powerup_volume())
 		var delay_timer := get_tree().create_timer(i * 0.05)
 		delay_timer.timeout.connect(func(): _play_sfx(s))
 
@@ -174,7 +220,7 @@ func play_game_over() -> void:
 	if not sfx_enabled: return
 	var notes: Array = [392.0, 370.0, 349.23, 293.66, 220.0, 146.83]
 	for i in notes.size():
-		var s: AudioStreamWAV = _make_tone(notes[i], "square", 0.25, 0.08)
+		var s: AudioStreamWAV = _make_tone(notes[i], "square", 0.25, _sfx_game_over_volume())
 		var delay_timer := get_tree().create_timer(i * 0.15)
 		delay_timer.timeout.connect(func(): _play_sfx(s))
 
@@ -193,7 +239,7 @@ func set_sfx_enabled(enabled: bool) -> void:
 
 func set_bgm_volume(percent: float) -> void:
 	bgm_volume = clamp(percent / 100.0, 0.0, 1.0)
-	var db: float = linear_to_db(bgm_volume * MASTER_BGM_VOLUME)
+	var db: float = linear_to_db(bgm_volume * _master_bgm_volume())
 	for p in _bgm_players:
 		p.volume_db = db
 	_save_settings()
@@ -212,21 +258,21 @@ func _get_sfx_player() -> AudioStreamPlayer:
 
 func _play_sfx(stream: AudioStreamWAV) -> void:
 	var player: AudioStreamPlayer = _get_sfx_player()
-	player.volume_db = linear_to_db(sfx_volume * MASTER_SFX_VOLUME)
+	player.volume_db = linear_to_db(sfx_volume * _master_sfx_volume())
 	player.stream = stream
 	player.play()
 
 func _play_bgm_note(freq: float, wave: String, duration: float, volume: float) -> void:
 	var stream: AudioStreamWAV = _make_tone(freq, wave, duration, volume)
 	var player: AudioStreamPlayer = _bgm_players[_bgm_step % BGM_POOL_SIZE]
-	player.volume_db = linear_to_db(bgm_volume * MASTER_BGM_VOLUME * volume)
+	player.volume_db = linear_to_db(bgm_volume * _master_bgm_volume() * volume)
 	player.stream = stream
 	player.play()
 
 func _play_bgm_noise(volume: float) -> void:
 	var stream: AudioStreamWAV = _make_noise(0.05, volume)
 	var player: AudioStreamPlayer = _bgm_players[(_bgm_step + 8) % BGM_POOL_SIZE]
-	player.volume_db = linear_to_db(bgm_volume * MASTER_BGM_VOLUME * volume)
+	player.volume_db = linear_to_db(bgm_volume * _master_bgm_volume() * volume)
 	player.stream = stream
 	player.play()
 
@@ -260,7 +306,7 @@ func _make_tone(freq: float, wave: String, duration: float, volume: float) -> Au
 	stream.mix_rate = SAMPLE_RATE
 	return stream
 
-func _make_sweep(start_freq: float, end_freq: float, duration: float, wave: String) -> AudioStreamWAV:
+func _make_sweep(start_freq: float, end_freq: float, duration: float, wave: String, volume: float) -> AudioStreamWAV:
 	var sample_count: int = int(SAMPLE_RATE * duration)
 	var data := PackedByteArray()
 	data.resize(sample_count * 2)
@@ -278,7 +324,7 @@ func _make_sweep(start_freq: float, end_freq: float, duration: float, wave: Stri
 			_:
 				sample_f = 2.0 * phase - 1.0
 		var env: float = max(0.0, 1.0 - t / duration)
-		var val: int = int(clamp(sample_f * env * 0.8 * 32767.0, -32768.0, 32767.0))
+		var val: int = int(clamp(sample_f * env * volume * 32767.0, -32768.0, 32767.0))
 		data[i * 2] = val & 0xFF
 		data[i * 2 + 1] = (val >> 8) & 0xFF
 	var stream := AudioStreamWAV.new()
@@ -288,7 +334,7 @@ func _make_sweep(start_freq: float, end_freq: float, duration: float, wave: Stri
 	stream.mix_rate = SAMPLE_RATE
 	return stream
 
-func _make_step_down(freqs: Array, step_dur: float, total_dur: float, wave: String) -> AudioStreamWAV:
+func _make_step_down(freqs: Array, step_dur: float, total_dur: float, wave: String, volume: float) -> AudioStreamWAV:
 	var sample_count: int = int(SAMPLE_RATE * total_dur)
 	var data := PackedByteArray()
 	data.resize(sample_count * 2)
@@ -299,7 +345,7 @@ func _make_step_down(freqs: Array, step_dur: float, total_dur: float, wave: Stri
 		var phase: float = fmod(t * freq, 1.0)
 		var sample_f: float = 1.0 if phase < 0.5 else -1.0  # square
 		var env: float = max(0.0, 1.0 - t / total_dur)
-		var val: int = int(clamp(sample_f * env * 0.8 * 32767.0, -32768.0, 32767.0))
+		var val: int = int(clamp(sample_f * env * volume * 32767.0, -32768.0, 32767.0))
 		data[i * 2] = val & 0xFF
 		data[i * 2 + 1] = (val >> 8) & 0xFF
 	var stream := AudioStreamWAV.new()

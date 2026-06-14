@@ -6,6 +6,8 @@ extends Control
 
 const CANVAS_W: int = 256
 const CANVAS_H: int = 240
+const PANEL_RADIUS: float = 10.0
+const BUTTON_RADIUS: float = 6.0
 
 var _main_scene: Node2D = null
 var _last_tap_frame: int = -1
@@ -55,8 +57,17 @@ func _handle_tap(local_pos: Vector2) -> void:
 		queue_redraw()
 	elif HapticManager.contains_pause_resume_button(local_pos):
 		_unpause()
+	elif HapticManager.contains_pause_title_button(local_pos):
+		_return_to_title()
 	else:
 		_unpause()
+
+func _return_to_title() -> void:
+	if _main_scene and _main_scene.has_method("return_to_title"):
+		_main_scene.return_to_title()
+	elif GameState.state == "PAUSED":
+		AudioManager.stop_bgm()
+		GameState.return_to_title()
 
 func _unpause() -> void:
 	if _main_scene and _main_scene.has_method("toggle_pause_menu"):
@@ -78,12 +89,12 @@ func _draw() -> void:
 	var font := _game_font()
 	draw_rect(Rect2(0, 0, CANVAS_W, CANVAS_H), Color(0, 0, 0, 0.65))
 
-	var panel := Rect2(40, 72, 176, 96)
-	draw_rect(panel, Color(0.059, 0.059, 0.102, 0.95))
-	draw_rect(panel, Color(0.616, 0.0, 1.0, 0.85), false, 1.0)
+	var panel := Rect2(40, 68, 176, 114)
+	_draw_rounded_rect(panel, Color(0.059, 0.059, 0.102, 0.95), PANEL_RADIUS, true)
+	_draw_rounded_rect(panel, Color(0.616, 0.0, 1.0, 0.85), PANEL_RADIUS, false, 1.0)
 
 	draw_string(font,
-		Vector2(0, 92),
+		Vector2(0, 88),
 		"PAUSED", HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 10,
 		Color(0.0, 0.941, 1.0))
 
@@ -93,10 +104,11 @@ func _draw() -> void:
 		HapticManager.haptics_enabled
 	)
 	_draw_pause_button(HapticManager.PAUSE_RESUME_BTN, "RESUME", true)
+	_draw_pause_button(HapticManager.PAUSE_TITLE_BTN, "TITLE", false)
 
 	var hint: String = "ESC TO RESUME" if not DisplayServer.is_touchscreen_available() else "TAP OUTSIDE TO RESUME"
 	draw_string(font,
-		Vector2(0, 182),
+		Vector2(0, 196),
 		hint, HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 6,
 		Color(0.502, 0.502, 0.627))
 
@@ -105,9 +117,20 @@ func _draw_pause_button(rect: Rect2, label: String, is_active: bool) -> void:
 	var bg := Color(0.118, 0.118, 0.176, 0.95)
 	var border := Color(0.616, 0.0, 1.0, 0.7) if is_active else Color(0.306, 0.306, 0.427)
 	var text_color := Color(0.0, 0.941, 1.0) if is_active else Color(0.502, 0.502, 0.627)
-	draw_rect(rect, bg)
-	draw_rect(rect, border, false, 1.0)
+	_draw_rounded_rect(rect, bg, BUTTON_RADIUS, true)
+	_draw_rounded_rect(rect, border, BUTTON_RADIUS, false, 1.0)
 	draw_string(font,
 		Vector2(rect.position.x, rect.position.y + rect.size.y - 5.0),
 		label, HORIZONTAL_ALIGNMENT_CENTER, int(rect.size.x), 7,
 		text_color)
+
+func _draw_rounded_rect(rect: Rect2, color: Color, radius: float, filled: bool, line_width: float = 1.0) -> void:
+	var style := StyleBoxFlat.new()
+	style.set_corner_radius_all(maxi(int(radius), 0))
+	if filled:
+		style.bg_color = color
+	else:
+		style.bg_color = Color.TRANSPARENT
+		style.border_color = color
+		style.set_border_width_all(maxi(int(line_width), 1))
+	style.draw(get_canvas_item(), rect)

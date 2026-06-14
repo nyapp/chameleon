@@ -17,8 +17,5 @@ yarn-error.log*
 # Godot user data (local saves, caches)
 # These are intentionally committed: project.godot, scenes/, scripts/, shaders/, export_presets.cfg
 
-# Web prototype (served locally, not part of Godot export)
-web/.DS_Store
-
 # iOS / Godot export build output (regenerated via Export)
 build/

@@ -58,10 +58,16 @@ var _main_scene: Node2D
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
+	if not get_viewport().size_changed.is_connected(_request_layout):
+		get_viewport().size_changed.connect(_request_layout)
 	_apply_layout()
 	if not Engine.is_editor_hint():
 		_connect_game()
 		_connect_controls()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED:
+		_request_layout()
 
 func _request_layout() -> void:
 	if is_node_ready() or Engine.is_editor_hint():
@@ -135,11 +141,23 @@ func _apply_layout() -> void:
 		stick_y
 	)
 
-	var pause_size := pause_button.button_size
-	pause_button.position = Vector2(
-		inner_w - pause_size.x - 10.0,
-		stick_y + maxf(0.0, (stick_size.y - pause_size.y) * 0.5)
-	)
+	_layout_pause_button(deck, inner_w)
+
+func _layout_pause_button(deck: Control, _inner_w: float) -> void:
+	if pause_button == null:
+		return
+
+	if deck.has_method("sync_pause_button_size"):
+		deck.sync_pause_button_size(pause_button.button_size)
+
+	var btn_rect: Rect2 = Rect2(Vector2.ZERO, pause_button.button_size)
+	if deck.has_method("get_pause_button_rect"):
+		btn_rect = deck.get_pause_button_rect(pause_button.button_size)
+
+	pause_button.position = btn_rect.position
+	pause_button.z_index = 10
+	if pause_button.get_parent() == deck:
+		deck.move_child(pause_button, -1)
 
 func _layout_pause_overlay(pad: float, y_screen: float, viewport_pad: float) -> void:
 	if pause_overlay == null:

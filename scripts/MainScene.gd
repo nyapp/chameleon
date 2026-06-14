@@ -325,6 +325,24 @@ func toggle_pause_menu() -> void:
 	if GameState.state in ["PLAYING", "PAUSED"]:
 		_toggle_pause()
 
+func return_to_title() -> void:
+	if GameState.state not in ["PLAYING", "PAUSED"]:
+		return
+	AudioManager.stop_bgm()
+	GameState.return_to_title()
+	chameleon.deactivate_power_up()
+	chameleon.tongue_state = "idle"
+	chameleon.tongue_len = 0.0
+	chameleon.caught_bug = null
+	screen_shake = 0.0
+	game_over_shake_time = 0.0
+	level_up_banner_time = 0.0
+	has_mouse_target = false
+	stick_aiming = false
+	stick_direction = Vector2.ZERO
+	_spawn_initial_bugs()
+	HapticManager.play_ui_tap()
+
 # ─── ポーズ ──────────────────────────────────────────────────
 func _toggle_pause() -> void:
 	if GameState.state == "PLAYING":

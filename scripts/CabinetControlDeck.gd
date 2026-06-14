@@ -4,6 +4,8 @@
 @tool
 extends Control
 
+const CabinetFontsScript := preload("res://scripts/CabinetFonts.gd")
+
 @export_group("Logo")
 @export var logo_text: String = "GAME CHAMELEON":
 	set(value):
@@ -29,6 +31,22 @@ extends Control
 	set(value):
 		line_margin_right = value
 		queue_redraw()
+
+@export_group("Pause Button")
+@export var pause_btn_size: Vector2 = Vector2(52.0, 20.0):
+	set(value):
+		pause_btn_size = value
+		queue_redraw()
+@export var pause_btn_margin_right: float = 12.0:
+	set(value):
+		pause_btn_margin_right = value
+		queue_redraw()
+@export var pause_btn_line_gap: float = 8.0:
+	set(value):
+		pause_btn_line_gap = value
+		queue_redraw()
+
+var _layout_pause_btn_size: Vector2 = Vector2(52.0, 20.0)
 
 @export_group("Shape")
 @export var bottom_radius: float = 14.0:
@@ -115,7 +133,28 @@ func _ready() -> void:
 	queue_redraw()
 
 func _font_mono() -> Font:
-	return CabinetFonts.mono_or_fallback()
+	return CabinetFontsScript.get_mono_font()
+
+func sync_pause_button_size(button_size: Vector2) -> void:
+	_layout_pause_btn_size = button_size
+	queue_redraw()
+
+func get_pause_button_rect(button_size: Vector2) -> Rect2:
+	var btn_size := button_size if button_size != Vector2.ZERO else _layout_pause_btn_size
+	var x := size.x - btn_size.x - pause_btn_margin_right
+	# 装飾ライン（logo_y+2 / logo_y+6）の中央にボタンを揃える
+	var row_center_y := logo_y + 5.0
+	var y := row_center_y - btn_size.y * 0.5
+	y = clampf(
+		y,
+		top_accent_height + 2.0,
+		float(GameLayout.CONTROL_DECK_HEADER_H) - btn_size.y
+	)
+	return Rect2(x, y, btn_size.x, btn_size.y)
+
+func get_header_right_reserve(button_size: Vector2) -> float:
+	var btn_size := button_size if button_size != Vector2.ZERO else _layout_pause_btn_size
+	return pause_btn_margin_right + btn_size.x + pause_btn_line_gap
 
 func _draw() -> void:
 	var r := Rect2(Vector2.ZERO, size)
@@ -132,7 +171,8 @@ func _draw() -> void:
 	draw_string(font, logo_pos, logo_text, HORIZONTAL_ALIGNMENT_LEFT, -1, logo_font_size, logo_color)
 
 	var line_x := logo_x + logo_w + line_gap_after_logo
-	var line_w := size.x - line_x - line_margin_right
+	var reserve := maxf(line_margin_right, get_header_right_reserve(_layout_pause_btn_size))
+	var line_w := maxf(0.0, size.x - line_x - reserve)
 	var line_y := logo_y + 2.0
 	draw_rect(Rect2(line_x, line_y, line_w, 2.0), line_color)
 	draw_rect(Rect2(line_x, line_y + 4.0, line_w, 2.0), line_color)
