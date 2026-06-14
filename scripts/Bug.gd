@@ -108,7 +108,9 @@ func update_movement(delta: float) -> void:
 		# 舌先に位置はchameleon.gdが制御するので移動しない
 		return
 
-	time_offset += 0.08
+	var step: float = GameState.scale60(delta)
+
+	time_offset += 0.08 * step
 
 	# 羽ばたきアニメーション（JSの wingFrame 切り替え相当）
 	wing_timer += delta
@@ -119,23 +121,25 @@ func update_movement(delta: float) -> void:
 	# タイプ別移動（JSのswitch文と同一ロジック）
 	match bug_type:
 		"common":
-			position.x += vx
-			position.y += sin(time_offset) * 0.8
+			position.x += vx * step
+			position.y += sin(time_offset) * 0.8 * step
 		"gnat":
-			position.x += vx
-			position.y += vy + cos(time_offset * 2.5) * 2.2
+			position.x += vx * step
+			position.y += (vy + cos(time_offset * 2.5) * 2.2) * step
 		"firefly":
-			position.x += vx
-			position.y += vy + sin(time_offset) * 1.2
+			position.x += vx * step
+			position.y += (vy + sin(time_offset) * 1.2) * step
 		"wasp":
-			position.x += vx
-			position.y += sin(time_offset * 1.5) * 1.5
-			if randf() < 0.02:
+			position.x += vx * step
+			position.y += sin(time_offset * 1.5) * 1.5 * step
+			if randf() < 0.02 * step:
 				vx = -(1.5 + randf() * 1.5)
 
 	# 画面外チェック → respawn
 	if position.x < -15.0 or position.y > CANVAS_H + 15.0 or position.y < -15.0:
 		respawn()
+
+	queue_redraw()
 
 # ─── 描画（JSの Bug.drawSprite() 相当、_draw() で呼ばれる） ──
 func _draw() -> void:
@@ -202,8 +206,3 @@ func _draw_sprite() -> void:
 			# ドクロマーク
 			draw_rect(Rect2(-3, 0, 1, 1), Color(0.224, 1.0, 0.078))
 			draw_rect(Rect2(-1, 0, 1, 1), Color(0.224, 1.0, 0.078))
-
-# ─── _process：毎フレーム移動＋再描画トリガー ────────────────
-func _process(delta: float) -> void:
-	update_movement(delta)
-	queue_redraw()

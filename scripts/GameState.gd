@@ -4,6 +4,10 @@
 
 extends Node
 
+const TARGET_FPS: float = 60.0
+const LEVEL_UP_BANNER_DURATION: float = 80.0 / TARGET_FPS
+const GAME_OVER_SHAKE_DURATION: float = 1.0
+
 # ─── ゲーム状態 ────────────────────────────────────────────
 ## "TITLE" | "PLAYING" | "GAMEOVER" | "PAUSED"
 var state: String = "TITLE"
@@ -39,6 +43,9 @@ signal level_up(new_level: int)
 signal combo_updated(new_combo: int)
 
 # ─── 初期化 ─────────────────────────────────────────────────
+func scale60(delta: float) -> float:
+	return delta * TARGET_FPS
+
 func _ready() -> void:
 	load_high_score()
 
@@ -137,7 +144,7 @@ func load_high_score() -> void:
 # ─── エネルギー更新 ──────────────────────────────────────────
 func tick_energy(delta: float) -> bool:
 	## delta補正で60fps非依存。falseを返したらゲームオーバー
-	var depletion: float = (ENERGY_DEPLETION_BASE + (level - 1) * 0.008) * delta * 60.0
+	var depletion: float = (ENERGY_DEPLETION_BASE + (level - 1) * 0.008) * scale60(delta)
 	energy = max(0.0, energy - depletion)
 	return energy > 0.0
 

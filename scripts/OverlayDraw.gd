@@ -8,7 +8,7 @@ const CANVAS_W: int = 256
 const CANVAS_H: int = 240
 
 # MainSceneから参照して書き込まれる
-var level_up_banner_frames: int = 0
+var level_up_banner_time: float = 0.0
 var chameleon_ref: Node2D = null   # Chameleonノードへの参照（カーソル描画用）
 var is_dpad_aiming: bool = false
 var is_stick_aiming: bool = false
@@ -28,7 +28,7 @@ func _draw() -> void:
 		_draw_target_cursor()
 
 	# レベルアップバナー
-	if level_up_banner_frames > 0 and gs.state == "PLAYING":
+	if level_up_banner_time > 0.0 and gs.state == "PLAYING":
 		_draw_level_up_banner(gs.level)
 
 	# 状態別オーバーレイ
@@ -225,7 +225,8 @@ func _draw_level_up_banner(current_level: int) -> void:
 	draw_rect(Rect2(-1, CANVAS_H / 2.0 + 15, CANVAS_W + 2, 1),
 		Color(0.0, 0.941, 1.0))
 
-	if int(level_up_banner_frames / 5) % 2 == 0:
+	var elapsed: float = GameState.LEVEL_UP_BANNER_DURATION - level_up_banner_time
+	if int(elapsed * 12.0) % 2 == 0:
 		draw_string(_game_font(),
 			Vector2(0, CANVAS_H / 2.0 + 3),
 			"LEVEL UP: STAGE %d" % current_level,

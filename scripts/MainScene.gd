@@ -18,8 +18,8 @@ const LEVEL_SCORE_THRESHOLD: int = 1200
 
 # ─── 状態変数 ────────────────────────────────────────────────
 var screen_shake: float = 0.0
-var game_over_shake_frames: int = 0
-var level_up_banner_frames: int = 0
+var game_over_shake_time: float = 0.0
+var level_up_banner_time: float = 0.0
 
 # マウス・タッチ入力
 var mouse_target: Vector2 = Vector2.ZERO
@@ -76,7 +76,7 @@ func _process(delta: float) -> void:
 	if overlay_draw:
 		overlay_draw.is_dpad_aiming = dpad_aiming
 		overlay_draw.is_stick_aiming = stick_aiming
-		overlay_draw.level_up_banner_frames = level_up_banner_frames
+		overlay_draw.level_up_banner_time = level_up_banner_time
 
 	if stick_aiming and stick_direction.length_squared() > 0.0:
 		var pivot := Vector2(Chameleon.PIVOT_X, Chameleon.PIVOT_Y)
@@ -88,7 +88,7 @@ func _process(delta: float) -> void:
 		_update_bugs_idle(delta)
 		return
 
-	_tick_screen_shake()
+	_tick_screen_shake(delta)
 
 	chameleon.has_mouse_target = has_mouse_target
 	chameleon.mouse_target = mouse_target
@@ -114,19 +114,16 @@ func _update_playing(delta: float) -> void:
 	_check_tongue_collision()
 	_check_swallow_result()
 
-	if level_up_banner_frames > 0:
-		level_up_banner_frames -= 1
+	if level_up_banner_time > 0.0:
+		level_up_banner_time = max(0.0, level_up_banner_time - delta)
 
 # ─── 虫の更新（PLAYING） ────────────────────────────────────
 func _update_bugs_playing(delta: float) -> void:
 	var gs: Node = GameState
 	var is_slow: bool = gs.power_up_type == "slow"
 	for bug in bug_container.get_children():
-		if is_slow and bug.state == "active":
-			if randf() < 0.4:
-				bug.update_movement(delta)
-		else:
-			bug.update_movement(delta)
+		var move_delta: float = delta * 0.4 if is_slow and bug.state == "active" else delta
+		bug.update_movement(move_delta)
 
 func _update_bugs_idle(delta: float) -> void:
 	for bug in bug_container.get_children():
@@ -186,7 +183,7 @@ func _process_eaten_bug(bug: Bug) -> void:
 			_trigger_random_power_up()
 
 	if gs.check_level_up():
-		level_up_banner_frames = 80
+		level_up_banner_time = GameState.LEVEL_UP_BANNER_DURATION
 		AudioManager.play_powerup()
 		var bug_count: int = bug_container.get_child_count()
 		if gs.level <= 4 and bug_count < MAX_BUGS + 2:
@@ -213,22 +210,23 @@ func _on_power_up_deactivated() -> void:
 func _on_game_over() -> void:
 	AudioManager.stop_bgm()
 	AudioManager.play_game_over()
-	game_over_shake_frames = 60
+	game_over_shake_time = GameState.GAME_OVER_SHAKE_DURATION
 	screen_shake = max(screen_shake, 12.0)
 
 # ─── レベルアップ ────────────────────────────────────────────
 func _on_level_up(_new_level: int) -> void:
-	level_up_banner_frames = 80
+	level_up_banner_time = GameState.LEVEL_UP_BANNER_DURATION
 
 # ─── 画面揺れ ────────────────────────────────────────────────
-func _tick_screen_shake() -> void:
-	if game_over_shake_frames > 0:
-		game_over_shake_frames -= 1
-		screen_shake = max(0.0, screen_shake - 0.8)
-		if game_over_shake_frames <= 0:
+func _tick_screen_shake(delta: float) -> void:
+	var step: float = GameState.scale60(delta)
+	if game_over_shake_time > 0.0:
+		game_over_shake_time = max(0.0, game_over_shake_time - delta)
+		screen_shake = max(0.0, screen_shake - 0.8 * step)
+		if game_over_shake_time <= 0.0:
 			screen_shake = 0.0
 	elif GameState.state == "PLAYING" and screen_shake > 0.0:
-		screen_shake = max(0.0, screen_shake - 0.8)
+		screen_shake = max(0.0, screen_shake - 0.8 * step)
 
 	if screen_shake > 0.0 and camera:
 		camera.offset = Vector2(
@@ -293,7 +291,7 @@ func _start_game() -> void:
 	GameState.start_game()
 	chameleon.deactivate_power_up()
 	screen_shake = 0.0
-	game_over_shake_frames = 0
+	game_over_shake_time = 0.0
 	_spawn_initial_bugs()
 	AudioManager.start_bgm()
 

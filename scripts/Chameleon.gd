@@ -45,7 +45,7 @@ var caught_bug: Bug = null  # 捕まえた虫への参照
 var idle_time: float = 0.0
 var mouth_open: float = 0.0
 var eye_target_angle: float = 0.0
-var flash_frames: int = 0
+var flash_time: float = 0.0
 var hurt_poison: bool = false
 var power_up_active: String = ""  # "" | "gold" | "multi" | "slow"
 var color_cycle: float = 0.0
@@ -71,7 +71,7 @@ func shoot() -> bool:
 	return false
 
 func trigger_hurt(is_poison: bool = false) -> void:
-	flash_frames = 15
+	flash_time = 15.0 / GameState.TARGET_FPS
 	hurt_poison = is_poison
 
 func activate_power_up(power_type: String) -> void:
@@ -93,7 +93,8 @@ func tongue_tip_position() -> Vector2:
 
 # ─── 更新（JSの chameleon.update() 相当） ────────────────────
 func update_chameleon(delta: float, current_bugs: Array) -> void:
-	idle_time += 0.05
+	var step: float = GameState.scale60(delta)
+	idle_time += 0.05 * step
 
 	# 1. 照準ロジック
 	if has_mouse_target:
@@ -104,14 +105,14 @@ func update_chameleon(delta: float, current_bugs: Array) -> void:
 		target_angle = desired
 	else:
 		if keys_up or keys_left:
-			target_angle -= 0.04
+			target_angle -= 0.04 * step
 		if keys_down or keys_right:
-			target_angle += 0.04
+			target_angle += 0.04 * step
 		target_angle = clamp(target_angle, ANGLE_MIN, ANGLE_MAX)
 
 	# スムーズ回転
 	var diff: float = target_angle - angle
-	angle += diff * rotation_speed
+	angle += diff * (1.0 - pow(1.0 - rotation_speed, step))
 
 	# 2. 目のトラッキング（最近接の虫を追う）
 	if current_bugs.size() > 0:
@@ -133,8 +134,8 @@ func update_chameleon(delta: float, current_bugs: Array) -> void:
 	# 3. 舌ステートマシン
 	match tongue_state:
 		"shooting":
-			mouth_open = min(mouth_open + 0.25, 1.0)
-			tongue_len += tongue_speed
+			mouth_open = min(mouth_open + 0.25 * step, 1.0)
+			tongue_len += tongue_speed * step
 			tongue_tip = Vector2(PIVOT_X, PIVOT_Y) + Vector2(cos(angle), sin(angle)) * tongue_len
 			if tongue_len >= tongue_max_len \
 				or tongue_tip.x < 0 or tongue_tip.x > CANVAS_W \
@@ -142,7 +143,7 @@ func update_chameleon(delta: float, current_bugs: Array) -> void:
 					tongue_state = "retracting"
 
 		"retracting":
-			tongue_len -= tongue_speed * 0.8
+			tongue_len -= tongue_speed * 0.8 * step
 			if tongue_len <= 0.0:
 				tongue_len = 0.0
 				tongue_state = "swallowing"
@@ -151,7 +152,7 @@ func update_chameleon(delta: float, current_bugs: Array) -> void:
 				caught_bug.position = tongue_tip
 
 		"swallowing":
-			mouth_open = max(mouth_open - 0.15, 0.0)
+			mouth_open = max(mouth_open - 0.15 * step, 0.0)
 			if mouth_open <= 0.0:
 				tongue_state = "idle"
 				if caught_bug:
@@ -165,9 +166,9 @@ func update_chameleon(delta: float, current_bugs: Array) -> void:
 			mouth_open = 0.0
 
 	# アニメ変数
-	if flash_frames > 0:
-		flash_frames -= 1
-	color_cycle += 0.05
+	if flash_time > 0.0:
+		flash_time = max(0.0, flash_time - delta)
+	color_cycle += 0.05 * step
 
 	queue_redraw()
 
@@ -204,7 +205,7 @@ func _draw() -> void:
 				skin_color = Color(0.0, 0.941, 1.0)
 				belly_color = Color(0.722, 1.0, 1.0)
 				dark_color = Color(0.0, 0.545, 0.639)
-	elif flash_frames > 0:
+	elif flash_time > 0.0:
 		if hurt_poison:
 			skin_color = Color(0.749, 0.353, 0.949)  # #bf5af2
 			belly_color = Color(0.224, 1.0, 0.078)
