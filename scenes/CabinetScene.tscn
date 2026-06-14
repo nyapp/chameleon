@@ -98,3 +98,12 @@ offset_right = 162.0
 offset_bottom = 86.0
 mouse_filter = 0
 script = ExtResource("8_stick")
+
+[node name="CabinetFrameOverlay" type="Control" parent="CabinetInner"]
+layout_mode = 0
+anchors_preset = 0
+offset_right = 296.0
+offset_bottom = 458.0
+mouse_filter = 2
+script = ExtResource("2_frame")
+overlay_only = true

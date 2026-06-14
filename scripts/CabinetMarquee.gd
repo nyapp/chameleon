@@ -13,23 +13,23 @@ extends Control
 	set(value):
 		subtitle_text = value
 		queue_redraw()
-@export var title_font_size: int = 13:
+@export var title_font_size: int = 18:
 	set(value):
 		title_font_size = value
 		queue_redraw()
-@export var subtitle_font_size: int = 7:
+@export var subtitle_font_size: int = 6:
 	set(value):
 		subtitle_font_size = value
 		queue_redraw()
-@export var subtitle_letter_spacing: float = 2.5:
+@export var subtitle_letter_spacing: float = 4.0:
 	set(value):
 		subtitle_letter_spacing = value
 		queue_redraw()
-@export_range(0.0, 1.0) var title_y_ratio: float = 0.38:
+@export_range(0.0, 1.0) var title_y_ratio: float = 0.54:
 	set(value):
 		title_y_ratio = value
 		queue_redraw()
-@export_range(0.0, 1.0) var subtitle_y_ratio: float = 0.78:
+@export_range(0.0, 1.0) var subtitle_y_ratio: float = 0.80:
 	set(value):
 		subtitle_y_ratio = value
 		queue_redraw()
@@ -55,11 +55,11 @@ extends Control
 @export var sweep_speed: float = 8.0:
 	set(value):
 		sweep_speed = value
-@export var glow_alpha_min: float = 0.35:
+@export var glow_alpha_min: float = 0.45:
 	set(value):
 		glow_alpha_min = value
 		queue_redraw()
-@export var glow_alpha_range: float = 0.45:
+@export var glow_alpha_range: float = 0.55:
 	set(value):
 		glow_alpha_range = value
 		queue_redraw()
@@ -113,6 +113,9 @@ func _process(delta: float) -> void:
 	if needs_redraw:
 		queue_redraw()
 
+func _font_arcade() -> Font:
+	return CabinetFonts.arcade_or_fallback()
+
 func _draw() -> void:
 	var panel := Rect2(Vector2.ZERO, size)
 	_draw_rounded_rect(panel, bg_color, corner_radius, true)
@@ -123,7 +126,7 @@ func _draw() -> void:
 
 	_draw_sweep(panel)
 
-	var font: Font = ThemeDB.fallback_font
+	var font := _font_arcade()
 	var pulse := 0.5 + 0.5 * sin(_pulse)
 	var glow_alpha := glow_alpha_min + pulse * glow_alpha_range
 
@@ -133,7 +136,7 @@ func _draw() -> void:
 
 	var sub_w := _spaced_text_width(font, subtitle_text, subtitle_font_size, subtitle_letter_spacing)
 	var sub_pos := Vector2((size.x - sub_w) * 0.5, size.y * subtitle_y_ratio)
-	_draw_spaced_neon_text(font, subtitle_text, sub_pos, subtitle_font_size, subtitle_letter_spacing, neon_cyan, 0.85)
+	_draw_spaced_neon_text(font, subtitle_text, sub_pos, subtitle_font_size, subtitle_letter_spacing, neon_cyan, 0.9)
 
 func _draw_rounded_rect(rect: Rect2, color: Color, radius: float, filled: bool, line_width: float = 1.0) -> void:
 	var style := StyleBoxFlat.new()
@@ -149,7 +152,7 @@ func _draw_rounded_rect(rect: Rect2, color: Color, radius: float, filled: bool, 
 func _draw_sweep(panel: Rect2) -> void:
 	var span := maxf(panel.size.x, panel.size.y) * 2.0
 	var offset := lerpf(-span, span, _sweep)
-	var stripe_w := span * 0.08
+	var stripe_w := span * 0.06
 	var center := panel.get_center() + Vector2(offset, offset)
 	var half := span * 0.5
 	var points := PackedVector2Array([
@@ -161,12 +164,18 @@ func _draw_sweep(panel: Rect2) -> void:
 	draw_colored_polygon(points, Color(1.0, 1.0, 1.0, sweep_alpha))
 
 func _draw_neon_title(font: Font, text: String, pos: Vector2, font_size: int, glow_alpha: float) -> void:
-	var spreads := [4.0, 3.0, 2.0, 1.0]
-	for spread in spreads:
-		var alpha: float = glow_alpha * (0.12 + (4.0 - spread) * 0.06)
-		var glow_col := neon_purple if spread <= 2.0 else neon_pink
+	var layers := [
+		{"spread": 5.0, "alpha": glow_alpha * 0.18, "color": neon_purple},
+		{"spread": 3.5, "alpha": glow_alpha * 0.28, "color": neon_pink},
+		{"spread": 2.0, "alpha": glow_alpha * 0.38, "color": neon_pink},
+		{"spread": 1.0, "alpha": glow_alpha * 0.55, "color": Color(1.0, 1.0, 1.0, 1.0)},
+	]
+	for layer in layers:
+		var spread: float = layer.spread
+		var col: Color = layer.color
+		var alpha: float = layer.alpha
 		for ox in [-spread, 0.0, spread]:
-			for oy in [-spread * 0.5, 0.0, spread * 0.5]:
+			for oy in [-spread * 0.35, 0.0, spread * 0.35]:
 				if is_zero_approx(ox) and is_zero_approx(oy):
 					continue
 				draw_string(
@@ -176,10 +185,10 @@ func _draw_neon_title(font: Font, text: String, pos: Vector2, font_size: int, gl
 					HORIZONTAL_ALIGNMENT_LEFT,
 					-1,
 					font_size,
-					Color(glow_col.r, glow_col.g, glow_col.b, alpha)
+					Color(col.r, col.g, col.b, alpha)
 				)
 
-	draw_string(font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(1.0, 1.0, 1.0, 0.95))
+	draw_string(font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(1.0, 1.0, 1.0, 0.98))
 	draw_string(
 		font,
 		pos,
@@ -187,7 +196,7 @@ func _draw_neon_title(font: Font, text: String, pos: Vector2, font_size: int, gl
 		HORIZONTAL_ALIGNMENT_LEFT,
 		-1,
 		font_size,
-		Color(neon_pink.r, neon_pink.g, neon_pink.b, glow_alpha * 0.55)
+		Color(neon_pink.r, neon_pink.g, neon_pink.b, glow_alpha * 0.65)
 	)
 
 func _spaced_text_width(font: Font, text: String, font_size: int, spacing: float) -> float:
@@ -221,7 +230,7 @@ func _draw_spaced_neon_text(
 				HORIZONTAL_ALIGNMENT_LEFT,
 				-1,
 				font_size,
-				Color(color.r, color.g, color.b, alpha * 0.2)
+				Color(color.r, color.g, color.b, alpha * 0.25)
 			)
 		draw_string(
 			font,

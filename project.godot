@@ -25,13 +25,14 @@ config/icon="res://icon.svg"
 GameState="*res://scripts/GameState.gd"
 AudioManager="*res://scripts/AudioManager.gd"
 GameLayout="*res://scripts/GameLayout.gd"
+CabinetFonts="*res://scripts/CabinetFonts.gd"
 
 [display]
 
-window/size/viewport_width=296
-window/size/viewport_height=458
-window/size/window_width_override=888
-window/size/window_height_override=1374
+window/size/viewport_width=326
+window/size/viewport_height=532
+window/size/window_width_override=978
+window/size/window_height_override=1596
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation=1

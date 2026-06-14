@@ -23,31 +23,35 @@ func _draw() -> void:
 	_draw_hunger_bar(gs)
 	_draw_level_up_banner(gs)
 
+func _game_font() -> Font:
+	return CabinetFonts.arcade_or_fallback()
+
 func _draw_score_bar(gs: Node) -> void:
+	var font := _game_font()
 	# スコア表示（左上）
 	var score_str: String = "SCORE:%s" % str(gs.score).lpad(6, "0")
-	draw_string(ThemeDB.fallback_font, Vector2(8, 12), score_str,
+	draw_string(font, Vector2(8, 12), score_str,
 		HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color.WHITE)
 
 	# ハイスコア表示（右寄り）
-	var hi_str: String = "HI:%s" % str(gs.high_score).lpad(6, "0")
-	draw_string(ThemeDB.fallback_font, Vector2(138, 12), hi_str,
+	var hi_str: String = "HI-SCORE:%s" % str(gs.high_score).lpad(6, "0")
+	draw_string(font, Vector2(138, 12), hi_str,
 		HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color.WHITE)
 
 func _draw_level(gs: Node) -> void:
+	var font := _game_font()
 	var level_text: String = "LEVEL %d" % gs.level
-	# 影（黒縁取り）— pos.x は左端、width 内で中央揃え（JS の textAlign:center とは異なる）
-	draw_string(ThemeDB.fallback_font, Vector2(1, 24), level_text,
+	draw_string(font, Vector2(1, 24), level_text,
 		HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 7, Color(0, 0, 0, 0.85))
-	draw_string(ThemeDB.fallback_font, Vector2(0, 23), level_text,
-		HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 7, Color(1.0, 0.918, 0.0))  # #ffea00
+	draw_string(font, Vector2(0, 23), level_text,
+		HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 7, Color(1.0, 0.918, 0.0))
 
 func _draw_combo(gs: Node) -> void:
 	if gs.combo <= 1:
 		return
 	var blink: bool = int(gs.combo_timer * 5.0) % 2 == 0
 	var color: Color = Color(1.0, 0.918, 0.0) if blink else Color.WHITE
-	draw_string(ThemeDB.fallback_font, Vector2(160, 22),
+	draw_string(_game_font(), Vector2(160, 22),
 		"COMBO x%d" % gs.combo,
 		HORIZONTAL_ALIGNMENT_LEFT, -1, 7, color)
 
@@ -69,7 +73,7 @@ func _draw_power_up_label(gs: Node) -> void:
 			color = Color(0.0, 0.941, 1.0)
 		_:
 			return
-	draw_string(ThemeDB.fallback_font, Vector2(0, CANVAS_H - 22),
+	draw_string(_game_font(), Vector2(0, CANVAS_H - 22),
 		text, HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 6, color)
 
 func _draw_hunger_bar(gs: Node) -> void:
@@ -85,7 +89,7 @@ func _draw_hunger_bar(gs: Node) -> void:
 		Color(0.020, 0.020, 0.047, 0.75))
 
 	# "HUNGER" ラベル
-	draw_string(ThemeDB.fallback_font, Vector2(BAR_X, CANVAS_H - 12),
+	draw_string(_game_font(), Vector2(BAR_X, CANVAS_H - 12),
 		"HUNGER", HORIZONTAL_ALIGNMENT_LEFT, -1, 6, Color(0.0, 0.941, 1.0))
 
 	# バー枠
