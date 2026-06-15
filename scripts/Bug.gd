@@ -35,7 +35,7 @@ const TYPE_META: Dictionary = {
 		"score_value": -200,
 		"energy_value": -25.0,
 		"color": Color(0.749, 0.353, 0.949),  # #bf5af2
-		"size": 5,
+		"size": 4,
 		"label_ja": "毒ハチ",
 		"tag": "毒・ダメージ",
 	},
@@ -52,6 +52,8 @@ var wing_frame: int = 0
 var wing_timer: float = 0.0
 var _trail: Array[Vector2] = []
 var _trail_timer: float = 0.0
+var _powder_spots: Array[Dictionary] = []
+var _powder_spawn_timer: float = 0.0
 
 # タイプ別プロパティ（TYPE_METAから引く）
 var score_value: int = 0
@@ -65,6 +67,16 @@ const TRAIL_MAX: int = 5
 const TRAIL_MIN_DIST: float = 1.5
 const TRAIL_INTERVAL: float = 0.06
 const _TRAIL_ALPHAS: Array[float] = [0.18, 0.28, 0.38, 0.48, 0.58]
+const _WASP_MIASMA_PURPLE := Color(0.486, 0.227, 0.929)
+const _WASP_MIASMA_TOXIN := Color(0.224, 1.0, 0.078)
+const WASP_POWDER_MAX: int = 56
+const WASP_POWDER_LIFETIME: float = 1.6
+const WASP_POWDER_SPAWN_INTERVAL: float = 0.04
+const _WASP_MIASMA_DOTS := [
+	Vector2(-5, -2), Vector2(-4, 2), Vector2(-3, 4), Vector2(0, 5),
+	Vector2(2, 3), Vector2(4, 1), Vector2(4, -2), Vector2(2, -4),
+	Vector2(0, -5), Vector2(-2, -4), Vector2(-1, 0), Vector2(1, -1),
+]
 
 # ─── 初期化 ─────────────────────────────────────────────────
 func setup(p_type: String) -> void:
@@ -83,6 +95,8 @@ func respawn() -> void:
 	time_offset = randf() * 100.0
 	_trail.clear()
 	_trail_timer = 0.0
+	_powder_spots.clear()
+	_powder_spawn_timer = 0.0
 
 	var side: String = "right" if randf() > 0.4 else "top"
 
@@ -113,7 +127,9 @@ func respawn() -> void:
 # ─── 毎フレーム更新（JSの bug.update() 相当） ────────────────
 func update_movement(delta: float) -> void:
 	if state == "caught":
-		# 舌先に位置はchameleon.gdが制御するので移動しない
+		if bug_type == "wasp":
+			_update_wasp_powder(delta, false)
+			queue_redraw()
 		return
 
 	var step: float = GameState.scale60(delta)
@@ -148,8 +164,41 @@ func update_movement(delta: float) -> void:
 		respawn()
 	else:
 		_update_trail(delta)
+		if bug_type == "wasp":
+			_update_wasp_powder(delta, true)
 
 	queue_redraw()
+
+func _update_wasp_powder(delta: float, spawn: bool) -> void:
+	for i in range(_powder_spots.size() - 1, -1, -1):
+		_powder_spots[i]["age"] = float(_powder_spots[i]["age"]) + delta
+		if float(_powder_spots[i]["age"]) >= WASP_POWDER_LIFETIME:
+			_powder_spots.remove_at(i)
+
+	if not spawn or state != "active":
+		return
+
+	_powder_spawn_timer += delta
+	if _powder_spawn_timer < WASP_POWDER_SPAWN_INTERVAL:
+		return
+	_powder_spawn_timer = 0.0
+	_spawn_wasp_powder()
+
+func _spawn_wasp_powder() -> void:
+	var parent := get_parent() as Node2D
+	if parent == null:
+		return
+
+	var base_pos := parent.to_local(global_position)
+	var drift := Vector2(-3.0, 0.0) if vx <= 0.0 else Vector2(3.0, 0.0)
+	for _i in 2:
+		_powder_spots.append({
+			"pos": base_pos + drift + Vector2(randf_range(-4.0, 4.0), randf_range(-3.0, 3.0)),
+			"age": 0.0,
+			"kind": randi() % 3,
+		})
+	while _powder_spots.size() > WASP_POWDER_MAX:
+		_powder_spots.pop_front()
 
 func _update_trail(delta: float) -> void:
 	if GameState.power_up_type != "slow" or state != "active":
@@ -169,6 +218,8 @@ func _draw() -> void:
 	if state == "eaten":
 		return
 	_draw_trail()
+	if bug_type == "wasp":
+		_draw_wasp_powder()
 	_draw_sprite()
 
 func _draw_trail() -> void:
@@ -185,6 +236,57 @@ func _slow_mo_color(color: Color, alpha_mul: float = 1.0) -> Color:
 	if alpha_mul != 1.0:
 		c.a *= alpha_mul
 	return c
+
+func _wasp_miasma_time() -> float:
+	return Time.get_ticks_msec() * 0.001
+
+func _draw_wasp_miasma(alpha_mul: float) -> void:
+	var t := _wasp_miasma_time()
+	for i in _WASP_MIASMA_DOTS.size():
+		var flicker := sin(t * 2.4 + float(i) * 0.9)
+		if flicker < -0.35:
+			continue
+
+		var dot: Vector2 = _WASP_MIASMA_DOTS[i]
+		var is_toxin := i % 4 == 0
+		var base_alpha := 0.2 if is_toxin else 0.14
+		var col := _WASP_MIASMA_TOXIN if is_toxin else _WASP_MIASMA_PURPLE
+		draw_rect(
+			Rect2(dot.x, dot.y, 1, 1),
+			_slow_mo_color(Color(col.r, col.g, col.b, base_alpha + flicker * 0.05), alpha_mul)
+		)
+
+func _draw_wasp_powder() -> void:
+	var parent := get_parent() as Node2D
+	if parent == null or _powder_spots.is_empty():
+		return
+
+	for spot in _powder_spots:
+		var age: float = float(spot["age"])
+		var life_t := age / WASP_POWDER_LIFETIME
+		var alpha := (1.0 - life_t) * (1.0 - life_t) * 0.48
+		if alpha < 0.04:
+			continue
+
+		var local := to_local(parent.to_global(spot["pos"]))
+		var kind: int = int(spot["kind"])
+		var col := _WASP_MIASMA_TOXIN if kind == 0 else _WASP_MIASMA_PURPLE
+		var px := floori(local.x)
+		var py := floori(local.y)
+		draw_rect(
+			Rect2(px, py, 1, 1),
+			_slow_mo_color(Color(col.r, col.g, col.b, alpha))
+		)
+		if kind != 1:
+			draw_rect(
+				Rect2(px + 1, py, 1, 1),
+				_slow_mo_color(Color(col.r, col.g, col.b, alpha * 0.55))
+			)
+		if kind == 2:
+			draw_rect(
+				Rect2(px, py + 1, 1, 1),
+				_slow_mo_color(Color(col.r, col.g, col.b, alpha * 0.4))
+			)
 
 func _draw_sprite_with_alpha(alpha: float) -> void:
 	match bug_type:
@@ -216,27 +318,28 @@ func _draw_sprite_with_alpha(alpha: float) -> void:
 				draw_rect(Rect2(-4, -1, 1, 2), _slow_mo_color(Color(1.0, 1.0, 1.0), alpha))
 				draw_rect(Rect2(2, -1, 1, 2), _slow_mo_color(Color(1.0, 1.0, 1.0), alpha))
 		"wasp":
+			_draw_wasp_miasma(alpha)
 			var wing_color := _slow_mo_color(Color(0.616, 0.0, 1.0, 0.4), alpha)
 			if wing_frame == 0:
-				draw_rect(Rect2(-3, -6, 3, 4), wing_color)
-				draw_rect(Rect2(1, -6, 3, 4), wing_color)
+				draw_rect(Rect2(-2, -6, 2, 4), wing_color)
+				draw_rect(Rect2(0, -6, 2, 4), wing_color)
 			else:
-				draw_rect(Rect2(-5, -4, 2, 3), wing_color)
-				draw_rect(Rect2(3, -4, 2, 3), wing_color)
+				draw_rect(Rect2(-4, -4, 2, 3), wing_color)
+				draw_rect(Rect2(2, -4, 2, 3), wing_color)
 			var purple := _slow_mo_color(Color(0.749, 0.353, 0.949), alpha)
-			draw_rect(Rect2(-4, -1, 3, 3), purple)
-			draw_rect(Rect2(-1, -1, 3, 3), purple)
-			draw_rect(Rect2(2, -1, 3, 3), purple)
-			draw_rect(Rect2(-2, -1, 1, 3), _slow_mo_color(Color(0.102, 0.039, 0.180), alpha))
-			draw_rect(Rect2(1, -1, 1, 3), _slow_mo_color(Color(0.102, 0.039, 0.180), alpha))
-			draw_rect(Rect2(4, -1, 2, 2), _slow_mo_color(Color(0.486, 0.227, 0.929), alpha))
-			draw_rect(Rect2(4, -1, 1, 1), _slow_mo_color(Color(0.224, 1.0, 0.078), alpha))
-			draw_rect(Rect2(5, 0, 1, 1), _slow_mo_color(Color(0.224, 1.0, 0.078), alpha))
-			draw_rect(Rect2(-6, 0, 2, 1), _slow_mo_color(Color(0.224, 1.0, 0.078), alpha))
-			draw_rect(Rect2(-7, 1, 1, 1), _slow_mo_color(Color(0.0, 1.0, 0.255), alpha))
-			draw_rect(Rect2(-6, 2, 1, 1), _slow_mo_color(Color(0.0, 1.0, 0.255), alpha))
-			draw_rect(Rect2(-3, 0, 1, 1), _slow_mo_color(Color(0.224, 1.0, 0.078), alpha))
-			draw_rect(Rect2(-1, 0, 1, 1), _slow_mo_color(Color(0.224, 1.0, 0.078), alpha))
+			draw_rect(Rect2(-3, -1, 2, 3), purple)
+			draw_rect(Rect2(-1, -1, 2, 3), purple)
+			draw_rect(Rect2(1, -1, 2, 3), purple)
+			draw_rect(Rect2(-1, -1, 1, 3), _slow_mo_color(Color(0.102, 0.039, 0.180), alpha))
+			draw_rect(Rect2(0, -1, 1, 3), _slow_mo_color(Color(0.102, 0.039, 0.180), alpha))
+			draw_rect(Rect2(3, -1, 2, 2), _slow_mo_color(Color(0.486, 0.227, 0.929), alpha))
+			draw_rect(Rect2(3, -1, 1, 1), _slow_mo_color(Color(0.224, 1.0, 0.078), alpha))
+			draw_rect(Rect2(4, 0, 1, 1), _slow_mo_color(Color(0.224, 1.0, 0.078), alpha))
+			draw_rect(Rect2(-4, 0, 2, 1), _slow_mo_color(Color(0.224, 1.0, 0.078), alpha))
+			draw_rect(Rect2(-5, 1, 1, 1), _slow_mo_color(Color(0.0, 1.0, 0.255), alpha))
+			draw_rect(Rect2(-4, 2, 1, 1), _slow_mo_color(Color(0.0, 1.0, 0.255), alpha))
+			draw_rect(Rect2(-2, 0, 1, 1), _slow_mo_color(Color(0.224, 1.0, 0.078), alpha))
+			draw_rect(Rect2(0, 0, 1, 1), _slow_mo_color(Color(0.224, 1.0, 0.078), alpha))
 
 func _draw_sprite() -> void:
 	_draw_sprite_with_alpha(1.0)
