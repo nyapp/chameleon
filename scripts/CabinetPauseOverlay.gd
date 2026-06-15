@@ -18,20 +18,20 @@ const PANEL_LEFT: float = 40.0
 const PANEL_TOP: float = 44.0
 const PANEL_WIDTH: float = 176.0
 const PANEL_BOTTOM_PAD: float = 14.0
+const PANEL_BORDER_WIDTH: float = 2.5
 const TITLE_BASELINE_Y: float = 62.0
 const ROW_START_Y: float = 84.0
-const HINT_BASELINE_Y: float = 235.0
 
-const COLOR_PANEL_BG := Color(0.059, 0.059, 0.102, 0.95)
-const COLOR_PANEL_BORDER := Color(0.616, 0.0, 1.0, 0.85)
-const COLOR_ROW_BG := Color(0.118, 0.118, 0.176, 0.95)
-const COLOR_ROW_BORDER_ON := Color(0.616, 0.0, 1.0, 0.7)
-const COLOR_ROW_BORDER_OFF := Color(0.306, 0.306, 0.427)
-const COLOR_TEXT_ON := Color(0.0, 0.941, 1.0)
-const COLOR_TEXT_OFF := Color(0.502, 0.502, 0.627)
-const COLOR_CHECKBOX_BG := Color(0.059, 0.059, 0.102, 1.0)
-const COLOR_CHECKBOX_BORDER := Color(0.616, 0.0, 1.0, 0.85)
-const COLOR_DIVIDER := Color(0.616, 0.0, 1.0, 0.35)
+const COLOR_PANEL_BG := Color(0.08, 0.08, 0.08, 0.92)
+const COLOR_PANEL_BORDER := Color(0.45, 0.45, 0.45, 0.7)
+const COLOR_ROW_BG := Color(0.12, 0.12, 0.12, 0.92)
+const COLOR_ROW_BORDER_ON := Color(0.55, 0.55, 0.55, 0.65)
+const COLOR_ROW_BORDER_OFF := Color(0.28, 0.28, 0.28)
+const COLOR_TEXT_ON := Color(0.75, 0.75, 0.75)
+const COLOR_TEXT_OFF := Color(0.42, 0.42, 0.42)
+const COLOR_CHECKBOX_BG := Color(0.06, 0.06, 0.06, 1.0)
+const COLOR_CHECKBOX_BORDER := Color(0.45, 0.45, 0.45, 0.75)
+const COLOR_DIVIDER := Color(0.35, 0.35, 0.35, 0.4)
 
 var _main_scene: Node2D = null
 var _last_tap_frame: int = -1
@@ -147,7 +147,7 @@ func _draw() -> void:
 
 	var panel := _panel_rect()
 	_draw_rounded_rect(panel, COLOR_PANEL_BG, PANEL_RADIUS, true)
-	_draw_rounded_rect(panel, COLOR_PANEL_BORDER, PANEL_RADIUS, false, 1.0)
+	_draw_rounded_rect(panel, COLOR_PANEL_BORDER, PANEL_RADIUS, false, PANEL_BORDER_WIDTH)
 
 	draw_string(font,
 		Vector2(0, TITLE_BASELINE_Y),
@@ -168,12 +168,6 @@ func _draw() -> void:
 
 	_draw_pause_action(_action_row(0), "RESUME")
 	_draw_pause_action(_action_row(1), "TITLE")
-
-	var hint: String = "ESC TO RESUME" if not DisplayServer.is_touchscreen_available() else "TAP OUTSIDE TO RESUME"
-	draw_string(font,
-		Vector2(0, HINT_BASELINE_Y),
-		hint, HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 6,
-		COLOR_TEXT_OFF)
 
 func _draw_pause_toggle(rect: Rect2, label: String, enabled: bool) -> void:
 	var font := _game_font()
