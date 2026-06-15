@@ -19,7 +19,7 @@ signal pressed
 		label_text = value
 		queue_redraw()
 
-@export var font_size: int = 6:
+@export var font_size: int = 8:
 	set(value):
 		font_size = value
 		queue_redraw()

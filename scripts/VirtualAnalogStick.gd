@@ -7,6 +7,7 @@ class_name VirtualAnalogStick
 
 signal aim_changed(direction: Vector2, magnitude: float)
 signal released(direction: Vector2, magnitude: float)
+signal pressed
 
 @export_group("Feel")
 @export var radius: float = 50.0:
@@ -22,11 +23,11 @@ signal released(direction: Vector2, magnitude: float)
 @export var invert_aim: bool = true
 
 @export_group("Knob")
-@export var knob_outer_radius: float = 18.0:
+@export var knob_outer_radius: float = 21.0:
 	set(value):
 		knob_outer_radius = value
 		queue_redraw()
-@export var knob_inner_radius: float = 14.0:
+@export var knob_inner_radius: float = 17.0:
 	set(value):
 		knob_inner_radius = value
 		queue_redraw()
@@ -123,8 +124,8 @@ func _gui_input(event: InputEvent) -> void:
 		accept_event()
 
 func _emit_ui_tap() -> void:
-	if GameState.state == "PLAYING":
-		HapticManager.play_ui_tap()
+	pressed.emit()
+	HapticManager.play_ui_tap()
 
 func _update_knob(local_pos: Vector2) -> void:
 	var center: Vector2 = size * 0.5

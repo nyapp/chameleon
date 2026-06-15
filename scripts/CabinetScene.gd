@@ -196,6 +196,7 @@ func _get_main_scene() -> Node2D:
 	return _main_scene
 
 func _connect_controls() -> void:
+	virtual_analog_stick.pressed.connect(_on_stick_pressed)
 	virtual_analog_stick.aim_changed.connect(_on_stick_aim_changed)
 	virtual_analog_stick.released.connect(_on_stick_released)
 	pause_button.pressed.connect(_on_pause_button_pressed)
@@ -205,6 +206,11 @@ func _on_pause_button_pressed() -> void:
 	if main_scene and main_scene.has_method("toggle_pause_menu"):
 		main_scene.toggle_pause_menu()
 		HapticManager.play_ui_tap()
+
+func _on_stick_pressed() -> void:
+	var main_scene := _get_main_scene()
+	if main_scene and main_scene.has_method("on_stick_pressed"):
+		main_scene.on_stick_pressed()
 
 func _on_stick_aim_changed(direction: Vector2, magnitude: float) -> void:
 	if _main_scene and _main_scene.has_method("on_stick_aim_changed"):

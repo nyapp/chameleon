@@ -51,6 +51,13 @@ func on_stick_aim_changed(direction: Vector2, _magnitude: float) -> void:
 	stick_aiming = true
 	stick_direction = direction
 
+func on_stick_pressed() -> void:
+	match GameState.state:
+		"TITLE":
+			_start_game()
+		"GAMEOVER":
+			_reset_game()
+
 func on_stick_released(direction: Vector2, magnitude: float, deadzone: float = 0.25) -> void:
 	stick_aiming = false
 	stick_direction = Vector2.ZERO
