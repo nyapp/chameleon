@@ -181,6 +181,9 @@ func _process(_delta: float) -> void:
 
 # ─── 描画（JSの chameleon.draw(ctx) 相当） ───────────────────
 func _draw() -> void:
+	if power_up_active == "slow":
+		_draw_slow_glow()
+
 	# --- カラーテーマ決定 ---
 	var skin_color := Color(0.0, 0.941, 1.0)     # #00f0ff
 	var belly_color := Color(1.0, 0.0, 0.498)    # #ff007f
@@ -279,6 +282,14 @@ func _draw() -> void:
 
 	# 座標変換をリセット
 	draw_set_transform(Vector2.ZERO)
+
+func _draw_slow_glow() -> void:
+	var pulse: float = 0.55 + 0.45 * sin(idle_time * 2.0)
+	var glow := Color(0.0, 0.941, 1.0)
+	var center := Vector2(PIVOT_X, PIVOT_Y)
+	draw_arc(center, 28.0, 0.0, TAU, 24, Color(glow.r, glow.g, glow.b, 0.08 * pulse), 14.0)
+	draw_arc(center, 20.0, 0.0, TAU, 20, Color(glow.r, glow.g, glow.b, 0.14 * pulse), 8.0)
+	draw_arc(center, 12.0, 0.0, TAU, 16, Color(glow.r, glow.g, glow.b, 0.22 * pulse), 4.0)
 
 # ─── 舌の描画（頭部のローカル座標系で描く） ─────────────────
 func _draw_tongue_local(skin_color_ref: Color) -> void:

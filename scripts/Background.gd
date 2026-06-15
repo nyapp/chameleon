@@ -15,7 +15,8 @@ const SPARKS: Array = [
 ]
 
 func _process(delta: float) -> void:
-	_flicker_time += delta
+	var flicker_scale := 0.4 if GameState.power_up_type == "slow" else 1.0
+	_flicker_time += delta * flicker_scale
 	queue_redraw()
 
 func _draw() -> void:

@@ -50,6 +50,7 @@ var vy: float = 0.0
 var time_offset: float = 0.0
 var wing_frame: int = 0
 var wing_timer: float = 0.0
+var _trail: Array[Vector2] = []
 
 # タイプ別プロパティ（TYPE_METAから引く）
 var score_value: int = 0
@@ -59,6 +60,8 @@ var size: int = 4
 # キャンバスサイズ（スポーン計算用）
 const CANVAS_W: int = 256
 const CANVAS_H: int = 240
+const TRAIL_MAX: int = 3
+const _TRAIL_ALPHAS: Array[float] = [0.12, 0.20, 0.28]
 
 # ─── 初期化 ─────────────────────────────────────────────────
 func setup(p_type: String) -> void:
@@ -75,6 +78,7 @@ func setup(p_type: String) -> void:
 func respawn() -> void:
 	state = "active"
 	time_offset = randf() * 100.0
+	_trail.clear()
 
 	var side: String = "right" if randf() > 0.4 else "top"
 
@@ -138,71 +142,86 @@ func update_movement(delta: float) -> void:
 	# 画面外チェック → respawn
 	if position.x < -15.0 or position.y > CANVAS_H + 15.0 or position.y < -15.0:
 		respawn()
+	else:
+		_update_trail()
 
 	queue_redraw()
+
+func _update_trail() -> void:
+	if GameState.power_up_type != "slow" or state != "active":
+		_trail.clear()
+		return
+	_trail.insert(0, position)
+	while _trail.size() > TRAIL_MAX:
+		_trail.pop_back()
 
 # ─── 描画（JSの Bug.drawSprite() 相当、_draw() で呼ばれる） ──
 func _draw() -> void:
 	if state == "eaten":
 		return
+	_draw_trail()
 	_draw_sprite()
 
-func _draw_sprite() -> void:
+func _draw_trail() -> void:
+	if _trail.is_empty():
+		return
+	for i in _trail.size():
+		var alpha: float = _TRAIL_ALPHAS[i] if i < _TRAIL_ALPHAS.size() else _TRAIL_ALPHAS[-1]
+		draw_set_transform(_trail[i] - position, 0.0, Vector2.ONE)
+		_draw_sprite_with_alpha(alpha)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func _draw_sprite_with_alpha(alpha: float) -> void:
 	match bug_type:
 		"common":
-			draw_rect(Rect2(-1, -1, 2, 2), Color(0.110, 0.110, 0.110))  # #1c1c1c
-			draw_rect(Rect2(1, -1, 2, 2), Color(1.0, 0.231, 0.188))     # #ff3b30
+			draw_rect(Rect2(-1, -1, 2, 2), Color(0.110, 0.110, 0.110, alpha))
+			draw_rect(Rect2(1, -1, 2, 2), Color(1.0, 0.231, 0.188, alpha))
 			if wing_frame == 0:
-				draw_rect(Rect2(-4, -5, 2, 3), Color(0.863, 0.863, 0.863))
-				draw_rect(Rect2(-1, -5, 2, 3), Color(0.863, 0.863, 0.863))
+				draw_rect(Rect2(-4, -5, 2, 3), Color(0.863, 0.863, 0.863, alpha))
+				draw_rect(Rect2(-1, -5, 2, 3), Color(0.863, 0.863, 0.863, alpha))
 			else:
-				draw_rect(Rect2(-5, -3, 3, 2), Color(0.863, 0.863, 0.863))
-				draw_rect(Rect2(-2, -3, 3, 2), Color(0.863, 0.863, 0.863))
-
+				draw_rect(Rect2(-5, -3, 3, 2), Color(0.863, 0.863, 0.863, alpha))
+				draw_rect(Rect2(-2, -3, 3, 2), Color(0.863, 0.863, 0.863, alpha))
 		"gnat":
-			draw_rect(Rect2(-1, -1, 2, 2), Color(0.702, 0.525, 0.0))   # #b38600
-			draw_rect(Rect2(0, 0, 1, 1), Color(1.0, 0.918, 0.0))        # #ffea00
+			draw_rect(Rect2(-1, -1, 2, 2), Color(0.702, 0.525, 0.0, alpha))
+			draw_rect(Rect2(0, 0, 1, 1), Color(1.0, 0.918, 0.0, alpha))
 			if wing_frame == 0:
-				draw_rect(Rect2(-3, -3, 2, 1), Color(1.0, 0.918, 0.0))
-				draw_rect(Rect2(1, -3, 2, 1), Color(1.0, 0.918, 0.0))
+				draw_rect(Rect2(-3, -3, 2, 1), Color(1.0, 0.918, 0.0, alpha))
+				draw_rect(Rect2(1, -3, 2, 1), Color(1.0, 0.918, 0.0, alpha))
 			else:
-				draw_rect(Rect2(-4, -1, 1, 2), Color(1.0, 0.918, 0.0))
-				draw_rect(Rect2(2, -1, 1, 2), Color(1.0, 0.918, 0.0))
-
+				draw_rect(Rect2(-4, -1, 1, 2), Color(1.0, 0.918, 0.0, alpha))
+				draw_rect(Rect2(2, -1, 1, 2), Color(1.0, 0.918, 0.0, alpha))
 		"firefly":
-			draw_rect(Rect2(-1, -1, 2, 2), Color(0.0, 0.784, 1.0))     # #00c8ff
-			draw_rect(Rect2(-2, 1, 2, 1), Color(0.224, 1.0, 0.078))     # #39ff14
+			draw_rect(Rect2(-1, -1, 2, 2), Color(0.0, 0.784, 1.0, alpha))
+			draw_rect(Rect2(-2, 1, 2, 1), Color(0.224, 1.0, 0.078, alpha))
 			if wing_frame == 0:
-				draw_rect(Rect2(-3, -3, 2, 1), Color(1.0, 1.0, 1.0))
-				draw_rect(Rect2(1, -3, 2, 1), Color(1.0, 1.0, 1.0))
+				draw_rect(Rect2(-3, -3, 2, 1), Color(1.0, 1.0, 1.0, alpha))
+				draw_rect(Rect2(1, -3, 2, 1), Color(1.0, 1.0, 1.0, alpha))
 			else:
-				draw_rect(Rect2(-4, -1, 1, 2), Color(1.0, 1.0, 1.0))
-				draw_rect(Rect2(2, -1, 1, 2), Color(1.0, 1.0, 1.0))
-
+				draw_rect(Rect2(-4, -1, 1, 2), Color(1.0, 1.0, 1.0, alpha))
+				draw_rect(Rect2(2, -1, 1, 2), Color(1.0, 1.0, 1.0, alpha))
 		"wasp":
-			# 翼（半透明）
-			var wing_color := Color(0.616, 0.0, 1.0, 0.4)
+			var wing_color := Color(0.616, 0.0, 1.0, 0.4 * alpha)
 			if wing_frame == 0:
 				draw_rect(Rect2(-3, -6, 3, 4), wing_color)
 				draw_rect(Rect2(1, -6, 3, 4), wing_color)
 			else:
 				draw_rect(Rect2(-5, -4, 2, 3), wing_color)
 				draw_rect(Rect2(3, -4, 2, 3), wing_color)
-			# 胴体（紫縞）
-			var purple := Color(0.749, 0.353, 0.949)  # #bf5af2
+			var purple := Color(0.749, 0.353, 0.949, alpha)
 			draw_rect(Rect2(-4, -1, 3, 3), purple)
 			draw_rect(Rect2(-1, -1, 3, 3), purple)
 			draw_rect(Rect2(2, -1, 3, 3), purple)
-			draw_rect(Rect2(-2, -1, 1, 3), Color(0.102, 0.039, 0.180))  # #1a0a2e
-			draw_rect(Rect2(1, -1, 1, 3), Color(0.102, 0.039, 0.180))
-			# 頭
-			draw_rect(Rect2(4, -1, 2, 2), Color(0.486, 0.227, 0.929))   # #7c3aed
-			draw_rect(Rect2(4, -1, 1, 1), Color(0.224, 1.0, 0.078))     # #39ff14
-			draw_rect(Rect2(5, 0, 1, 1), Color(0.224, 1.0, 0.078))
-			# 針
-			draw_rect(Rect2(-6, 0, 2, 1), Color(0.224, 1.0, 0.078))
-			draw_rect(Rect2(-7, 1, 1, 1), Color(0.0, 1.0, 0.255))       # #00ff41
-			draw_rect(Rect2(-6, 2, 1, 1), Color(0.0, 1.0, 0.255))
-			# ドクロマーク
-			draw_rect(Rect2(-3, 0, 1, 1), Color(0.224, 1.0, 0.078))
-			draw_rect(Rect2(-1, 0, 1, 1), Color(0.224, 1.0, 0.078))
+			draw_rect(Rect2(-2, -1, 1, 3), Color(0.102, 0.039, 0.180, alpha))
+			draw_rect(Rect2(1, -1, 1, 3), Color(0.102, 0.039, 0.180, alpha))
+			draw_rect(Rect2(4, -1, 2, 2), Color(0.486, 0.227, 0.929, alpha))
+			draw_rect(Rect2(4, -1, 1, 1), Color(0.224, 1.0, 0.078, alpha))
+			draw_rect(Rect2(5, 0, 1, 1), Color(0.224, 1.0, 0.078, alpha))
+			draw_rect(Rect2(-6, 0, 2, 1), Color(0.224, 1.0, 0.078, alpha))
+			draw_rect(Rect2(-7, 1, 1, 1), Color(0.0, 1.0, 0.255, alpha))
+			draw_rect(Rect2(-6, 2, 1, 1), Color(0.0, 1.0, 0.255, alpha))
+			draw_rect(Rect2(-3, 0, 1, 1), Color(0.224, 1.0, 0.078, alpha))
+			draw_rect(Rect2(-1, 0, 1, 1), Color(0.224, 1.0, 0.078, alpha))
+
+func _draw_sprite() -> void:
+	_draw_sprite_with_alpha(1.0)
