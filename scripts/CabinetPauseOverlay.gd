@@ -7,14 +7,40 @@ extends Control
 const CANVAS_W: int = 256
 const CANVAS_H: int = 240
 const PANEL_RADIUS: float = 10.0
-const BUTTON_RADIUS: float = 6.0
+const ROW_RADIUS: float = 6.0
+const ROW_LEFT: float = 56.0
+const ROW_WIDTH: float = 144.0
+const ROW_HEIGHT: float = 20.0
+const ROW_GAP: float = 6.0
+const SECTION_GAP: float = 10.0
+
+const PANEL_LEFT: float = 40.0
+const PANEL_TOP: float = 44.0
+const PANEL_WIDTH: float = 176.0
+const PANEL_BOTTOM_PAD: float = 14.0
+const TITLE_BASELINE_Y: float = 62.0
+const ROW_START_Y: float = 84.0
+const HINT_BASELINE_Y: float = 235.0
+
+const COLOR_PANEL_BG := Color(0.059, 0.059, 0.102, 0.95)
+const COLOR_PANEL_BORDER := Color(0.616, 0.0, 1.0, 0.85)
+const COLOR_ROW_BG := Color(0.118, 0.118, 0.176, 0.95)
+const COLOR_ROW_BORDER_ON := Color(0.616, 0.0, 1.0, 0.7)
+const COLOR_ROW_BORDER_OFF := Color(0.306, 0.306, 0.427)
+const COLOR_TEXT_ON := Color(0.0, 0.941, 1.0)
+const COLOR_TEXT_OFF := Color(0.502, 0.502, 0.627)
+const COLOR_CHECKBOX_BG := Color(0.059, 0.059, 0.102, 1.0)
+const COLOR_CHECKBOX_BORDER := Color(0.616, 0.0, 1.0, 0.85)
+const COLOR_DIVIDER := Color(0.616, 0.0, 1.0, 0.35)
 
 var _main_scene: Node2D = null
 var _last_tap_frame: int = -1
 
 func _ready() -> void:
 	GameState.state_changed.connect(_on_state_changed)
-	HapticManager.haptics_toggled.connect(_on_haptics_toggled)
+	HapticManager.haptics_toggled.connect(_on_settings_changed)
+	AudioManager.music_toggled.connect(_on_settings_changed)
+	AudioManager.sfx_toggled.connect(_on_settings_changed)
 	_sync_visibility()
 	queue_redraw()
 
@@ -25,7 +51,7 @@ func _on_state_changed(_new_state: String) -> void:
 	_sync_visibility()
 	queue_redraw()
 
-func _on_haptics_toggled(_enabled: bool) -> void:
+func _on_settings_changed(_enabled: bool) -> void:
 	queue_redraw()
 
 func _sync_visibility() -> void:
@@ -34,6 +60,30 @@ func _sync_visibility() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP if paused else Control.MOUSE_FILTER_IGNORE
 	z_index = 50 if paused else 0
 	call_deferred("queue_redraw")
+
+func _toggle_row(index: int) -> Rect2:
+	return Rect2(
+		ROW_LEFT,
+		ROW_START_Y + (ROW_HEIGHT + ROW_GAP) * float(index),
+		ROW_WIDTH,
+		ROW_HEIGHT
+	)
+
+func _actions_start_y() -> float:
+	return ROW_START_Y + (ROW_HEIGHT + ROW_GAP) * 3.0 + SECTION_GAP
+
+func _action_row(index: int) -> Rect2:
+	return Rect2(
+		ROW_LEFT,
+		_actions_start_y() + (ROW_HEIGHT + ROW_GAP) * float(index),
+		ROW_WIDTH,
+		ROW_HEIGHT
+	)
+
+func _panel_rect() -> Rect2:
+	var last_row := _action_row(1)
+	var bottom := last_row.position.y + last_row.size.y + PANEL_BOTTOM_PAD
+	return Rect2(PANEL_LEFT, PANEL_TOP, PANEL_WIDTH, bottom - PANEL_TOP)
 
 func _gui_input(event: InputEvent) -> void:
 	if GameState.state != "PAUSED":
@@ -52,12 +102,18 @@ func _handle_tap(local_pos: Vector2) -> void:
 	if frame == _last_tap_frame:
 		return
 	_last_tap_frame = frame
-	if HapticManager.contains_pause_haptics_button(local_pos):
+	if _toggle_row(0).has_point(local_pos):
+		AudioManager.set_music_enabled(not AudioManager.music_enabled)
+		queue_redraw()
+	elif _toggle_row(1).has_point(local_pos):
+		AudioManager.set_sfx_enabled(not AudioManager.sfx_enabled)
+		queue_redraw()
+	elif _toggle_row(2).has_point(local_pos):
 		HapticManager.set_haptics_enabled(not HapticManager.haptics_enabled)
 		queue_redraw()
-	elif HapticManager.contains_pause_resume_button(local_pos):
+	elif _action_row(0).has_point(local_pos):
 		_unpause()
-	elif HapticManager.contains_pause_title_button(local_pos):
+	elif _action_row(1).has_point(local_pos):
 		_return_to_title()
 	else:
 		_unpause()
@@ -89,40 +145,64 @@ func _draw() -> void:
 	var font := _game_font()
 	draw_rect(Rect2(0, 0, CANVAS_W, CANVAS_H), Color(0, 0, 0, 0.65))
 
-	var panel := Rect2(40, 68, 176, 114)
-	_draw_rounded_rect(panel, Color(0.059, 0.059, 0.102, 0.95), PANEL_RADIUS, true)
-	_draw_rounded_rect(panel, Color(0.616, 0.0, 1.0, 0.85), PANEL_RADIUS, false, 1.0)
+	var panel := _panel_rect()
+	_draw_rounded_rect(panel, COLOR_PANEL_BG, PANEL_RADIUS, true)
+	_draw_rounded_rect(panel, COLOR_PANEL_BORDER, PANEL_RADIUS, false, 1.0)
 
 	draw_string(font,
-		Vector2(0, 88),
+		Vector2(0, TITLE_BASELINE_Y),
 		"PAUSED", HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 10,
-		Color(0.0, 0.941, 1.0))
+		COLOR_TEXT_ON)
 
-	_draw_pause_button(
-		HapticManager.PAUSE_HAPTICS_BTN,
-		"HAPTICS: %s" % ("ON" if HapticManager.haptics_enabled else "OFF"),
-		HapticManager.haptics_enabled
+	_draw_pause_toggle(_toggle_row(0), "BGM", AudioManager.music_enabled)
+	_draw_pause_toggle(_toggle_row(1), "SE", AudioManager.sfx_enabled)
+	_draw_pause_toggle(_toggle_row(2), "HAPTICS", HapticManager.haptics_enabled)
+
+	var divider_y := _actions_start_y() - 5.0
+	draw_line(
+		Vector2(ROW_LEFT + 8.0, divider_y),
+		Vector2(ROW_LEFT + ROW_WIDTH - 8.0, divider_y),
+		COLOR_DIVIDER,
+		1.0
 	)
-	_draw_pause_button(HapticManager.PAUSE_RESUME_BTN, "RESUME", true)
-	_draw_pause_button(HapticManager.PAUSE_TITLE_BTN, "TITLE", false)
+
+	_draw_pause_action(_action_row(0), "RESUME")
+	_draw_pause_action(_action_row(1), "TITLE")
 
 	var hint: String = "ESC TO RESUME" if not DisplayServer.is_touchscreen_available() else "TAP OUTSIDE TO RESUME"
 	draw_string(font,
-		Vector2(0, 196),
+		Vector2(0, HINT_BASELINE_Y),
 		hint, HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 6,
-		Color(0.502, 0.502, 0.627))
+		COLOR_TEXT_OFF)
 
-func _draw_pause_button(rect: Rect2, label: String, is_active: bool) -> void:
+func _draw_pause_toggle(rect: Rect2, label: String, enabled: bool) -> void:
 	var font := _game_font()
-	var bg := Color(0.118, 0.118, 0.176, 0.95)
-	var border := Color(0.616, 0.0, 1.0, 0.7) if is_active else Color(0.306, 0.306, 0.427)
-	var text_color := Color(0.0, 0.941, 1.0) if is_active else Color(0.502, 0.502, 0.627)
-	_draw_rounded_rect(rect, bg, BUTTON_RADIUS, true)
-	_draw_rounded_rect(rect, border, BUTTON_RADIUS, false, 1.0)
+	var border := COLOR_ROW_BORDER_ON if enabled else COLOR_ROW_BORDER_OFF
+	var text_color := COLOR_TEXT_ON if enabled else COLOR_TEXT_OFF
+	_draw_row_background(rect, border)
+
+	var box := Rect2(rect.position.x + 10.0, rect.position.y + 5.0, 10.0, 10.0)
+	_draw_rounded_rect(box, COLOR_CHECKBOX_BG, 2.0, true)
+	_draw_rounded_rect(box, COLOR_CHECKBOX_BORDER, 2.0, false, 1.0)
+	if enabled:
+		draw_rect(Rect2(box.position.x + 2.0, box.position.y + 2.0, 6.0, 6.0), COLOR_TEXT_ON)
+
+	draw_string(font,
+		Vector2(rect.position.x + 26.0, rect.position.y + rect.size.y - 5.0),
+		label, HORIZONTAL_ALIGNMENT_LEFT, int(rect.size.x - 30.0), 7,
+		text_color)
+
+func _draw_pause_action(rect: Rect2, label: String) -> void:
+	var font := _game_font()
+	_draw_row_background(rect, COLOR_ROW_BORDER_ON)
 	draw_string(font,
 		Vector2(rect.position.x, rect.position.y + rect.size.y - 5.0),
 		label, HORIZONTAL_ALIGNMENT_CENTER, int(rect.size.x), 7,
-		text_color)
+		COLOR_TEXT_ON)
+
+func _draw_row_background(rect: Rect2, border: Color) -> void:
+	_draw_rounded_rect(rect, COLOR_ROW_BG, ROW_RADIUS, true)
+	_draw_rounded_rect(rect, border, ROW_RADIUS, false, 1.0)
 
 func _draw_rounded_rect(rect: Rect2, color: Color, radius: float, filled: bool, line_width: float = 1.0) -> void:
 	var style := StyleBoxFlat.new()

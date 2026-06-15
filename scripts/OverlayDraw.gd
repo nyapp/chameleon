@@ -209,16 +209,32 @@ func _draw_target_cursor() -> void:
 		draw_line(pivot.lerp(tip, t0), pivot.lerp(tip, t1), dash_color, 1.0)
 
 func _draw_level_up_banner(current_level: int) -> void:
-	draw_rect(Rect2(0, CANVAS_H / 2.0 - 15, CANVAS_W, 30), Color(0, 0, 0, 0.6))
-	draw_rect(Rect2(-1, CANVAS_H / 2.0 - 15, CANVAS_W + 2, 1),
-		Color(0.0, 0.941, 1.0))
-	draw_rect(Rect2(-1, CANVAS_H / 2.0 + 15, CANVAS_W + 2, 1),
-		Color(0.0, 0.941, 1.0))
+	const BANNER_HALF_H: float = 20.0
+	const FONT_SIZE: int = 14
+	const LINE_THICKNESS: float = 1.0
+	var band_top := CANVAS_H * 0.5 - BANNER_HALF_H
+	var band_h := BANNER_HALF_H * 2.0
+	var inner_top := band_top + LINE_THICKNESS
+	var inner_h := band_h - LINE_THICKNESS * 2.0
+
+	draw_rect(Rect2(0, band_top, CANVAS_W, band_h), Color(0, 0, 0, 0.6))
+	draw_rect(Rect2(-1, band_top, CANVAS_W + 2, LINE_THICKNESS), Color(0.0, 0.941, 1.0))
+	draw_rect(Rect2(-1, band_top + band_h, CANVAS_W + 2, LINE_THICKNESS), Color(0.0, 0.941, 1.0))
 
 	var elapsed: float = GameState.LEVEL_UP_BANNER_DURATION - level_up_banner_time
 	if int(elapsed * 12.0) % 2 == 0:
-		draw_string(_game_font(),
-			Vector2(0, CANVAS_H / 2.0 + 3),
-			"LEVEL UP: STAGE %d" % current_level,
-			HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 10,
+		var font := _game_font()
+		var text := "LEVEL UP: STAGE %d" % current_level
+		var baseline_y := _centered_text_baseline(font, text, FONT_SIZE, inner_top, inner_h)
+		draw_string(font,
+			Vector2(0, baseline_y),
+			text,
+			HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, FONT_SIZE,
 			Color(1.0, 0.918, 0.0))
+
+func _centered_text_baseline(font: Font, text: String, font_size: int, area_top: float, area_h: float) -> float:
+	var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+	var descent := font.get_descent(font_size)
+	# Press Start 2P は上側に余白が多いので、見た目の中央に寄せる微調整を入れる。
+	const VISUAL_BIAS_Y: float = 3.0
+	return area_top + (area_h - text_size.y) * 0.5 + text_size.y - descent + VISUAL_BIAS_Y

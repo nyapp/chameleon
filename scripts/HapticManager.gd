@@ -8,11 +8,6 @@ signal haptics_toggled(enabled: bool)
 
 const SAVE_PATH: String = "user://neo_chameleon_save.cfg"
 
-# ポーズメニューのボタン当たり判定（256x240 ゲーム座標）
-const PAUSE_HAPTICS_BTN := Rect2(56.0, 96.0, 144.0, 20.0)
-const PAUSE_RESUME_BTN := Rect2(56.0, 120.0, 144.0, 20.0)
-const PAUSE_TITLE_BTN := Rect2(56.0, 144.0, 144.0, 20.0)
-
 var haptics_enabled: bool = true
 
 var _haptics: Object = null
@@ -46,15 +41,6 @@ func set_haptics_enabled(enabled: bool) -> void:
 	haptics_toggled.emit(haptics_enabled)
 	if haptics_enabled:
 		_play("light")
-
-func contains_pause_haptics_button(local_pos: Vector2) -> bool:
-	return PAUSE_HAPTICS_BTN.has_point(local_pos)
-
-func contains_pause_resume_button(local_pos: Vector2) -> bool:
-	return PAUSE_RESUME_BTN.has_point(local_pos)
-
-func contains_pause_title_button(local_pos: Vector2) -> bool:
-	return PAUSE_TITLE_BTN.has_point(local_pos)
 
 func play_shoot() -> void:
 	_play("light")

@@ -7,7 +7,7 @@ extends Control
 const CabinetFontsScript := preload("res://scripts/CabinetFonts.gd")
 
 @export_group("Logo")
-@export var logo_text: String = "GAME CHAMELEON":
+@export var logo_text: String = "　CONTROLLER":
 	set(value):
 		logo_text = value
 		queue_redraw()

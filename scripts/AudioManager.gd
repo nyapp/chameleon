@@ -5,7 +5,9 @@
 
 extends Node
 
-# ─── 定数 ───────────────────────────────────────────────────
+signal music_toggled(enabled: bool)
+signal sfx_toggled(enabled: bool)
+
 const SAMPLE_RATE: int = 22050       # 軽量な低サンプルレート
 const TEMPO: int = 120
 const STEP_TIME: float = 60.0 / TEMPO / 2.0  # 8分音符（0.25秒）
@@ -226,16 +228,23 @@ func play_game_over() -> void:
 
 # ─── 設定変更API ─────────────────────────────────────────────
 func set_music_enabled(enabled: bool) -> void:
+	if music_enabled == enabled:
+		return
 	music_enabled = enabled
 	if enabled:
-		start_bgm()
+		if GameState.state != "PAUSED":
+			start_bgm()
 	else:
 		stop_bgm()
 	_save_settings()
+	music_toggled.emit(music_enabled)
 
 func set_sfx_enabled(enabled: bool) -> void:
+	if sfx_enabled == enabled:
+		return
 	sfx_enabled = enabled
 	_save_settings()
+	sfx_toggled.emit(sfx_enabled)
 
 func set_bgm_volume(percent: float) -> void:
 	bgm_volume = clamp(percent / 100.0, 0.0, 1.0)
