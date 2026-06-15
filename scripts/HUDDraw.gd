@@ -57,6 +57,8 @@ func _draw_combo(gs: Node) -> void:
 func _draw_power_up_label(gs: Node) -> void:
 	if gs.power_up_type == "":
 		return
+	const FONT_SIZE: int = 10
+	const BASELINE_Y: float = CANVAS_H - 28.0
 	var secs_left: int = ceili(gs.power_up_time_left)
 	var text: String
 	var color: Color
@@ -69,11 +71,11 @@ func _draw_power_up_label(gs: Node) -> void:
 			color = Color(1.0, 0.0, 0.498)
 		"slow":
 			text = "SLOW-MO: %ds" % secs_left
-			color = Color(0.0, 0.941, 1.0)
+			color = Color(0.706, 0.706, 0.706)  # #b4b4b4
 		_:
 			return
-	draw_string(_game_font(), Vector2(0, CANVAS_H - 22),
-		text, HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 6, color)
+	draw_string(_game_font(), Vector2(0, BASELINE_Y),
+		text, HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, FONT_SIZE, color)
 
 func _draw_hunger_bar(gs: Node) -> void:
 	const STRIP_H: int = 18

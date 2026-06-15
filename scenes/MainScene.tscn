@@ -7,7 +7,6 @@
 [ext_resource type="Script" uid="uid://dp0grup534u62" path="res://scripts/HUDDraw.gd" id="6_huddraw"]
 [ext_resource type="Script" uid="uid://c2npgst4w1jy5" path="res://scripts/OverlayDraw.gd" id="7_overlay"]
 [ext_resource type="Script" uid="uid://dh1re4sckx5ub" path="res://scripts/AudioTuning.gd" id="8_tuning"]
-[ext_resource type="Script" path="res://scripts/SlowMoOverlayDraw.gd" id="9_slowmo"]
 
 [node name="MainScene" type="Node2D" unique_id=900637197]
 script = ExtResource("1_main")
@@ -36,12 +35,6 @@ sfx_shoot_volume = 0.48
 sfx_eat_volume = 0.36
 sfx_hurt_volume = 0.36
 sfx_powerup_volume = 0.12
-
-[node name="SlowMoOverlay" type="CanvasLayer" parent="."]
-layer = 5
-
-[node name="SlowMoOverlayDraw" type="Node2D" parent="SlowMoOverlay"]
-script = ExtResource("9_slowmo")
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=763029164]
 layer = 10

@@ -51,6 +51,7 @@ var time_offset: float = 0.0
 var wing_frame: int = 0
 var wing_timer: float = 0.0
 var _trail: Array[Vector2] = []
+var _trail_timer: float = 0.0
 
 # タイプ別プロパティ（TYPE_METAから引く）
 var score_value: int = 0
@@ -60,8 +61,10 @@ var size: int = 4
 # キャンバスサイズ（スポーン計算用）
 const CANVAS_W: int = 256
 const CANVAS_H: int = 240
-const TRAIL_MAX: int = 3
-const _TRAIL_ALPHAS: Array[float] = [0.12, 0.20, 0.28]
+const TRAIL_MAX: int = 5
+const TRAIL_MIN_DIST: float = 1.5
+const TRAIL_INTERVAL: float = 0.06
+const _TRAIL_ALPHAS: Array[float] = [0.18, 0.28, 0.38, 0.48, 0.58]
 
 # ─── 初期化 ─────────────────────────────────────────────────
 func setup(p_type: String) -> void:
@@ -79,6 +82,7 @@ func respawn() -> void:
 	state = "active"
 	time_offset = randf() * 100.0
 	_trail.clear()
+	_trail_timer = 0.0
 
 	var side: String = "right" if randf() > 0.4 else "top"
 
@@ -143,17 +147,22 @@ func update_movement(delta: float) -> void:
 	if position.x < -15.0 or position.y > CANVAS_H + 15.0 or position.y < -15.0:
 		respawn()
 	else:
-		_update_trail()
+		_update_trail(delta)
 
 	queue_redraw()
 
-func _update_trail() -> void:
+func _update_trail(delta: float) -> void:
 	if GameState.power_up_type != "slow" or state != "active":
 		_trail.clear()
+		_trail_timer = 0.0
 		return
-	_trail.insert(0, position)
-	while _trail.size() > TRAIL_MAX:
-		_trail.pop_back()
+	_trail_timer += delta
+	var moved_enough: bool = _trail.is_empty() or position.distance_to(_trail[0]) >= TRAIL_MIN_DIST
+	if moved_enough or _trail_timer >= TRAIL_INTERVAL:
+		_trail.insert(0, position)
+		_trail_timer = 0.0
+		while _trail.size() > TRAIL_MAX:
+			_trail.pop_back()
 
 # ─── 描画（JSの Bug.drawSprite() 相当、_draw() で呼ばれる） ──
 func _draw() -> void:
@@ -171,57 +180,63 @@ func _draw_trail() -> void:
 		_draw_sprite_with_alpha(alpha)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
+func _slow_mo_color(color: Color, alpha_mul: float = 1.0) -> Color:
+	var c := GameState.desaturate_color(color, GameState.slow_mo_visual_blend)
+	if alpha_mul != 1.0:
+		c.a *= alpha_mul
+	return c
+
 func _draw_sprite_with_alpha(alpha: float) -> void:
 	match bug_type:
 		"common":
-			draw_rect(Rect2(-1, -1, 2, 2), Color(0.110, 0.110, 0.110, alpha))
-			draw_rect(Rect2(1, -1, 2, 2), Color(1.0, 0.231, 0.188, alpha))
+			draw_rect(Rect2(-1, -1, 2, 2), _slow_mo_color(Color(0.110, 0.110, 0.110), alpha))
+			draw_rect(Rect2(1, -1, 2, 2), _slow_mo_color(Color(1.0, 0.231, 0.188), alpha))
 			if wing_frame == 0:
-				draw_rect(Rect2(-4, -5, 2, 3), Color(0.863, 0.863, 0.863, alpha))
-				draw_rect(Rect2(-1, -5, 2, 3), Color(0.863, 0.863, 0.863, alpha))
+				draw_rect(Rect2(-4, -5, 2, 3), _slow_mo_color(Color(0.863, 0.863, 0.863), alpha))
+				draw_rect(Rect2(-1, -5, 2, 3), _slow_mo_color(Color(0.863, 0.863, 0.863), alpha))
 			else:
-				draw_rect(Rect2(-5, -3, 3, 2), Color(0.863, 0.863, 0.863, alpha))
-				draw_rect(Rect2(-2, -3, 3, 2), Color(0.863, 0.863, 0.863, alpha))
+				draw_rect(Rect2(-5, -3, 3, 2), _slow_mo_color(Color(0.863, 0.863, 0.863), alpha))
+				draw_rect(Rect2(-2, -3, 3, 2), _slow_mo_color(Color(0.863, 0.863, 0.863), alpha))
 		"gnat":
-			draw_rect(Rect2(-1, -1, 2, 2), Color(0.702, 0.525, 0.0, alpha))
-			draw_rect(Rect2(0, 0, 1, 1), Color(1.0, 0.918, 0.0, alpha))
+			draw_rect(Rect2(-1, -1, 2, 2), _slow_mo_color(Color(0.702, 0.525, 0.0), alpha))
+			draw_rect(Rect2(0, 0, 1, 1), _slow_mo_color(Color(1.0, 0.918, 0.0), alpha))
 			if wing_frame == 0:
-				draw_rect(Rect2(-3, -3, 2, 1), Color(1.0, 0.918, 0.0, alpha))
-				draw_rect(Rect2(1, -3, 2, 1), Color(1.0, 0.918, 0.0, alpha))
+				draw_rect(Rect2(-3, -3, 2, 1), _slow_mo_color(Color(1.0, 0.918, 0.0), alpha))
+				draw_rect(Rect2(1, -3, 2, 1), _slow_mo_color(Color(1.0, 0.918, 0.0), alpha))
 			else:
-				draw_rect(Rect2(-4, -1, 1, 2), Color(1.0, 0.918, 0.0, alpha))
-				draw_rect(Rect2(2, -1, 1, 2), Color(1.0, 0.918, 0.0, alpha))
+				draw_rect(Rect2(-4, -1, 1, 2), _slow_mo_color(Color(1.0, 0.918, 0.0), alpha))
+				draw_rect(Rect2(2, -1, 1, 2), _slow_mo_color(Color(1.0, 0.918, 0.0), alpha))
 		"firefly":
-			draw_rect(Rect2(-1, -1, 2, 2), Color(0.0, 0.784, 1.0, alpha))
-			draw_rect(Rect2(-2, 1, 2, 1), Color(0.224, 1.0, 0.078, alpha))
+			draw_rect(Rect2(-1, -1, 2, 2), _slow_mo_color(Color(0.0, 0.784, 1.0), alpha))
+			draw_rect(Rect2(-2, 1, 2, 1), _slow_mo_color(Color(0.224, 1.0, 0.078), alpha))
 			if wing_frame == 0:
-				draw_rect(Rect2(-3, -3, 2, 1), Color(1.0, 1.0, 1.0, alpha))
-				draw_rect(Rect2(1, -3, 2, 1), Color(1.0, 1.0, 1.0, alpha))
+				draw_rect(Rect2(-3, -3, 2, 1), _slow_mo_color(Color(1.0, 1.0, 1.0), alpha))
+				draw_rect(Rect2(1, -3, 2, 1), _slow_mo_color(Color(1.0, 1.0, 1.0), alpha))
 			else:
-				draw_rect(Rect2(-4, -1, 1, 2), Color(1.0, 1.0, 1.0, alpha))
-				draw_rect(Rect2(2, -1, 1, 2), Color(1.0, 1.0, 1.0, alpha))
+				draw_rect(Rect2(-4, -1, 1, 2), _slow_mo_color(Color(1.0, 1.0, 1.0), alpha))
+				draw_rect(Rect2(2, -1, 1, 2), _slow_mo_color(Color(1.0, 1.0, 1.0), alpha))
 		"wasp":
-			var wing_color := Color(0.616, 0.0, 1.0, 0.4 * alpha)
+			var wing_color := _slow_mo_color(Color(0.616, 0.0, 1.0, 0.4), alpha)
 			if wing_frame == 0:
 				draw_rect(Rect2(-3, -6, 3, 4), wing_color)
 				draw_rect(Rect2(1, -6, 3, 4), wing_color)
 			else:
 				draw_rect(Rect2(-5, -4, 2, 3), wing_color)
 				draw_rect(Rect2(3, -4, 2, 3), wing_color)
-			var purple := Color(0.749, 0.353, 0.949, alpha)
+			var purple := _slow_mo_color(Color(0.749, 0.353, 0.949), alpha)
 			draw_rect(Rect2(-4, -1, 3, 3), purple)
 			draw_rect(Rect2(-1, -1, 3, 3), purple)
 			draw_rect(Rect2(2, -1, 3, 3), purple)
-			draw_rect(Rect2(-2, -1, 1, 3), Color(0.102, 0.039, 0.180, alpha))
-			draw_rect(Rect2(1, -1, 1, 3), Color(0.102, 0.039, 0.180, alpha))
-			draw_rect(Rect2(4, -1, 2, 2), Color(0.486, 0.227, 0.929, alpha))
-			draw_rect(Rect2(4, -1, 1, 1), Color(0.224, 1.0, 0.078, alpha))
-			draw_rect(Rect2(5, 0, 1, 1), Color(0.224, 1.0, 0.078, alpha))
-			draw_rect(Rect2(-6, 0, 2, 1), Color(0.224, 1.0, 0.078, alpha))
-			draw_rect(Rect2(-7, 1, 1, 1), Color(0.0, 1.0, 0.255, alpha))
-			draw_rect(Rect2(-6, 2, 1, 1), Color(0.0, 1.0, 0.255, alpha))
-			draw_rect(Rect2(-3, 0, 1, 1), Color(0.224, 1.0, 0.078, alpha))
-			draw_rect(Rect2(-1, 0, 1, 1), Color(0.224, 1.0, 0.078, alpha))
+			draw_rect(Rect2(-2, -1, 1, 3), _slow_mo_color(Color(0.102, 0.039, 0.180), alpha))
+			draw_rect(Rect2(1, -1, 1, 3), _slow_mo_color(Color(0.102, 0.039, 0.180), alpha))
+			draw_rect(Rect2(4, -1, 2, 2), _slow_mo_color(Color(0.486, 0.227, 0.929), alpha))
+			draw_rect(Rect2(4, -1, 1, 1), _slow_mo_color(Color(0.224, 1.0, 0.078), alpha))
+			draw_rect(Rect2(5, 0, 1, 1), _slow_mo_color(Color(0.224, 1.0, 0.078), alpha))
+			draw_rect(Rect2(-6, 0, 2, 1), _slow_mo_color(Color(0.224, 1.0, 0.078), alpha))
+			draw_rect(Rect2(-7, 1, 1, 1), _slow_mo_color(Color(0.0, 1.0, 0.255), alpha))
+			draw_rect(Rect2(-6, 2, 1, 1), _slow_mo_color(Color(0.0, 1.0, 0.255), alpha))
+			draw_rect(Rect2(-3, 0, 1, 1), _slow_mo_color(Color(0.224, 1.0, 0.078), alpha))
+			draw_rect(Rect2(-1, 0, 1, 1), _slow_mo_color(Color(0.224, 1.0, 0.078), alpha))
 
 func _draw_sprite() -> void:
 	_draw_sprite_with_alpha(1.0)

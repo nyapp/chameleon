@@ -180,10 +180,10 @@ func _process(_delta: float) -> void:
 	keys_right = Input.is_action_pressed("aim_right")
 
 # ─── 描画（JSの chameleon.draw(ctx) 相当） ───────────────────
-func _draw() -> void:
-	if power_up_active == "slow":
-		_draw_slow_glow()
+func _env_color(color: Color) -> Color:
+	return GameState.desaturate_color(color, GameState.slow_mo_visual_blend)
 
+func _draw() -> void:
 	# --- カラーテーマ決定 ---
 	var skin_color := Color(0.0, 0.941, 1.0)     # #00f0ff
 	var belly_color := Color(1.0, 0.0, 0.498)    # #ff007f
@@ -219,11 +219,12 @@ func _draw() -> void:
 			dark_color = Color(0.502, 0.0, 0.0)
 
 	# --- 枝（Branch）描画 ---
-	draw_rect(Rect2(0, 185, 90, 8), Color(0.290, 0.173, 0.067))   # #4a2c11
-	draw_rect(Rect2(0, 193, 80, 6), Color(0.188, 0.110, 0.039))   # #301c0a
+	draw_rect(Rect2(0, 185, 90, 8), _env_color(Color(0.290, 0.173, 0.067)))   # #4a2c11
+	draw_rect(Rect2(0, 193, 80, 6), _env_color(Color(0.188, 0.110, 0.039)))   # #301c0a
 	# 葉っぱ
-	draw_rect(Rect2(70, 181, 6, 4), Color(0.106, 0.478, 0.153))   # #1b7a27
-	draw_rect(Rect2(72, 177, 2, 4), Color(0.106, 0.478, 0.153))
+	var leaf_color := _env_color(Color(0.106, 0.478, 0.153))   # #1b7a27
+	draw_rect(Rect2(70, 181, 6, 4), leaf_color)
+	draw_rect(Rect2(72, 177, 2, 4), leaf_color)
 
 	# --- しっぽ ---
 	draw_rect(Rect2(CHAR_X - 24, CHAR_Y - 12, 10, 4), dark_color)
@@ -282,14 +283,6 @@ func _draw() -> void:
 
 	# 座標変換をリセット
 	draw_set_transform(Vector2.ZERO)
-
-func _draw_slow_glow() -> void:
-	var pulse: float = 0.55 + 0.45 * sin(idle_time * 2.0)
-	var glow := Color(0.0, 0.941, 1.0)
-	var center := Vector2(PIVOT_X, PIVOT_Y)
-	draw_arc(center, 28.0, 0.0, TAU, 24, Color(glow.r, glow.g, glow.b, 0.08 * pulse), 14.0)
-	draw_arc(center, 20.0, 0.0, TAU, 20, Color(glow.r, glow.g, glow.b, 0.14 * pulse), 8.0)
-	draw_arc(center, 12.0, 0.0, TAU, 16, Color(glow.r, glow.g, glow.b, 0.22 * pulse), 4.0)
 
 # ─── 舌の描画（頭部のローカル座標系で描く） ─────────────────
 func _draw_tongue_local(skin_color_ref: Color) -> void:

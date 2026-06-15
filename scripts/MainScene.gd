@@ -16,7 +16,6 @@ const LEVEL_SCORE_THRESHOLD: int = 1200
 @onready var bug_container: Node2D = $BugContainer
 @onready var camera: Camera2D = $ScreenShakeCamera
 @onready var overlay_draw: Node2D = $HUD/OverlayDraw
-@onready var slow_mo_overlay: Node2D = $SlowMoOverlay/SlowMoOverlayDraw
 
 # ─── 状態変数 ────────────────────────────────────────────────
 var screen_shake: float = 0.0
@@ -43,8 +42,6 @@ func _ready() -> void:
 
 	if overlay_draw:
 		overlay_draw.chameleon_ref = chameleon
-	if slow_mo_overlay:
-		slow_mo_overlay.chameleon_ref = chameleon
 
 	_spawn_initial_bugs()
 	_trigger_boot_animation()
@@ -75,6 +72,8 @@ func _trigger_boot_animation() -> void:
 # ─── メインループ ────────────────────────────────────────────
 func _process(delta: float) -> void:
 	var gs: Node = GameState
+	gs.tick_slow_mo_visual(delta)
+
 	var dpad_aiming: bool = Input.is_action_pressed("aim_up") or Input.is_action_pressed("aim_down")
 
 	if overlay_draw:

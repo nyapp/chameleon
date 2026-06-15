@@ -32,6 +32,8 @@ const MAX_COMBO_TIME: float = 2.5  # 秒（JSの150フレーム相当）
 var power_up_type: String = ""
 var power_up_time_left: float = 0.0  # 秒（JSの480フレーム = 8.0秒）
 const POWER_UP_DURATION: float = 8.0
+const SLOW_MO_FADE_DURATION: float = 0.3
+var slow_mo_visual_blend: float = 0.0
 
 # ─── シグナル（Observer Pattern） ───────────────────────────
 signal state_changed(new_state: String)
@@ -66,6 +68,7 @@ func start_game() -> void:
 	combo_timer = 0.0
 	power_up_type = ""
 	power_up_time_left = 0.0
+	slow_mo_visual_blend = 0.0
 	set_state("PLAYING")
 
 func return_to_title() -> void:
@@ -77,6 +80,7 @@ func return_to_title() -> void:
 	combo_timer = 0.0
 	power_up_type = ""
 	power_up_time_left = 0.0
+	slow_mo_visual_blend = 0.0
 	frozen_by_menu = false
 	bgm_paused_by_menu = false
 	set_state("TITLE")
@@ -121,6 +125,17 @@ func tick_power_up(delta: float) -> void:
 		power_up_time_left -= delta
 		if power_up_time_left <= 0.0:
 			deactivate_power_up()
+
+func tick_slow_mo_visual(delta: float) -> void:
+	var target: float = 1.0 if state == "PLAYING" and power_up_type == "slow" else 0.0
+	var step: float = delta / SLOW_MO_FADE_DURATION if SLOW_MO_FADE_DURATION > 0.0 else 1.0
+	slow_mo_visual_blend = move_toward(slow_mo_visual_blend, target, step)
+
+func desaturate_color(color: Color, amount: float) -> Color:
+	if amount <= 0.001:
+		return color
+	var gray: float = color.r * 0.299 + color.g * 0.587 + color.b * 0.114
+	return color.lerp(Color(gray, gray, gray, color.a), clampf(amount, 0.0, 1.0))
 
 # ─── レベルアップ判定 ────────────────────────────────────────
 func check_level_up() -> bool:
