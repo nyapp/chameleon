@@ -72,31 +72,29 @@ func _draw_game_over_screen(gs: Node) -> void:
 	draw_rect(Rect2(0, 0, CANVAS_W, CANVAS_H), Color(0.059, 0.0, 0.039, 0.75))
 
 	draw_string(font,
-		Vector2(0, 85),
+		Vector2(0, 70),
 		"GAME OVER", HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 14,
 		Color(1.0, 0.231, 0.188))  # #ff3b30
 
 	draw_string(font,
-		Vector2(0, 115),
+		Vector2(0, 92),
 		"YOUR SCORE: %d" % gs.score, HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 8,
 		Color.WHITE)
 
-	draw_string(font,
-		Vector2(0, 130),
-		"FLIES CAUGHT: %d" % gs.flies_eaten, HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 8,
-		Color(0.224, 1.0, 0.078))  # #39ff14
+	var next_y: float = BugGuideDraw.draw_result_breakdown(self, font, CANVAS_W, 104.0, gs.bugs_eaten_by_type)
 
 	if gs.score >= gs.high_score and gs.score > 0:
 		draw_string(font,
-			Vector2(0, 148),
+			Vector2(0, next_y + 6.0),
 			"NEW HIGH SCORE!", HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 8,
 			Color(1.0, 0.918, 0.0))
+		next_y += 14.0
 
 	var flash: bool = int(Time.get_ticks_msec() / 400) % 2 == 0
 	var fc: Color = Color(0.0, 0.941, 1.0) if flash else Color(0.306, 0.306, 0.427)
 	var retry_label: String = "TAP TO RETRY" if DisplayServer.is_touchscreen_available() else "CLICK OR SPACE TO RETRY"
 	draw_string(font,
-		Vector2(0, 168),
+		Vector2(0, maxf(next_y + 14.0, 168.0)),
 		retry_label, HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 8, fc)
 
 const _LOW_HUNGER_COLOR := Color(1.0, 0.231, 0.188)  # #ff3b30

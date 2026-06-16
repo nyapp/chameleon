@@ -167,6 +167,7 @@ func _check_swallow_result() -> void:
 
 func _process_eaten_bug(bug: Bug) -> void:
 	var gs: Node = GameState
+	gs.record_bug_eaten(bug.bug_type)
 
 	if bug.bug_type == "wasp":
 		gs.combo = 0

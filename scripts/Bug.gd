@@ -67,16 +67,11 @@ const TRAIL_MAX: int = 5
 const TRAIL_MIN_DIST: float = 1.5
 const TRAIL_INTERVAL: float = 0.06
 const _TRAIL_ALPHAS: Array[float] = [0.18, 0.28, 0.38, 0.48, 0.58]
-const _WASP_MIASMA_PURPLE := Color(0.486, 0.227, 0.929)
-const _WASP_MIASMA_TOXIN := Color(0.224, 1.0, 0.078)
 const WASP_POWDER_MAX: int = 56
 const WASP_POWDER_LIFETIME: float = 1.6
 const WASP_POWDER_SPAWN_INTERVAL: float = 0.04
-const _WASP_MIASMA_DOTS := [
-	Vector2(-5, -2), Vector2(-4, 2), Vector2(-3, 4), Vector2(0, 5),
-	Vector2(2, 3), Vector2(4, 1), Vector2(4, -2), Vector2(2, -4),
-	Vector2(0, -5), Vector2(-2, -4), Vector2(-1, 0), Vector2(1, -1),
-]
+const _WASP_POWDER_PURPLE := Color(0.486, 0.227, 0.929)
+const _WASP_POWDER_TOXIN := Color(0.224, 1.0, 0.078)
 
 # ─── 初期化 ─────────────────────────────────────────────────
 func setup(p_type: String) -> void:
@@ -237,25 +232,6 @@ func _slow_mo_color(color: Color, alpha_mul: float = 1.0) -> Color:
 		c.a *= alpha_mul
 	return c
 
-func _wasp_miasma_time() -> float:
-	return Time.get_ticks_msec() * 0.001
-
-func _draw_wasp_miasma(alpha_mul: float) -> void:
-	var t := _wasp_miasma_time()
-	for i in _WASP_MIASMA_DOTS.size():
-		var flicker := sin(t * 2.4 + float(i) * 0.9)
-		if flicker < -0.35:
-			continue
-
-		var dot: Vector2 = _WASP_MIASMA_DOTS[i]
-		var is_toxin := i % 4 == 0
-		var base_alpha := 0.2 if is_toxin else 0.14
-		var col := _WASP_MIASMA_TOXIN if is_toxin else _WASP_MIASMA_PURPLE
-		draw_rect(
-			Rect2(dot.x, dot.y, 1, 1),
-			_slow_mo_color(Color(col.r, col.g, col.b, base_alpha + flicker * 0.05), alpha_mul)
-		)
-
 func _draw_wasp_powder() -> void:
 	var parent := get_parent() as Node2D
 	if parent == null or _powder_spots.is_empty():
@@ -270,7 +246,7 @@ func _draw_wasp_powder() -> void:
 
 		var local := to_local(parent.to_global(spot["pos"]))
 		var kind: int = int(spot["kind"])
-		var col := _WASP_MIASMA_TOXIN if kind == 0 else _WASP_MIASMA_PURPLE
+		var col := _WASP_POWDER_TOXIN if kind == 0 else _WASP_POWDER_PURPLE
 		var px := floori(local.x)
 		var py := floori(local.y)
 		draw_rect(
@@ -289,57 +265,14 @@ func _draw_wasp_powder() -> void:
 			)
 
 func _draw_sprite_with_alpha(alpha: float) -> void:
-	match bug_type:
-		"common":
-			draw_rect(Rect2(-1, -1, 2, 2), _slow_mo_color(Color(0.110, 0.110, 0.110), alpha))
-			draw_rect(Rect2(1, -1, 2, 2), _slow_mo_color(Color(1.0, 0.231, 0.188), alpha))
-			if wing_frame == 0:
-				draw_rect(Rect2(-4, -5, 2, 3), _slow_mo_color(Color(0.863, 0.863, 0.863), alpha))
-				draw_rect(Rect2(-1, -5, 2, 3), _slow_mo_color(Color(0.863, 0.863, 0.863), alpha))
-			else:
-				draw_rect(Rect2(-5, -3, 3, 2), _slow_mo_color(Color(0.863, 0.863, 0.863), alpha))
-				draw_rect(Rect2(-2, -3, 3, 2), _slow_mo_color(Color(0.863, 0.863, 0.863), alpha))
-		"gnat":
-			draw_rect(Rect2(-1, -1, 2, 2), _slow_mo_color(Color(0.702, 0.525, 0.0), alpha))
-			draw_rect(Rect2(0, 0, 1, 1), _slow_mo_color(Color(1.0, 0.918, 0.0), alpha))
-			if wing_frame == 0:
-				draw_rect(Rect2(-3, -3, 2, 1), _slow_mo_color(Color(1.0, 0.918, 0.0), alpha))
-				draw_rect(Rect2(1, -3, 2, 1), _slow_mo_color(Color(1.0, 0.918, 0.0), alpha))
-			else:
-				draw_rect(Rect2(-4, -1, 1, 2), _slow_mo_color(Color(1.0, 0.918, 0.0), alpha))
-				draw_rect(Rect2(2, -1, 1, 2), _slow_mo_color(Color(1.0, 0.918, 0.0), alpha))
-		"firefly":
-			draw_rect(Rect2(-1, -1, 2, 2), _slow_mo_color(Color(0.0, 0.784, 1.0), alpha))
-			draw_rect(Rect2(-2, 1, 2, 1), _slow_mo_color(Color(0.224, 1.0, 0.078), alpha))
-			if wing_frame == 0:
-				draw_rect(Rect2(-3, -3, 2, 1), _slow_mo_color(Color(1.0, 1.0, 1.0), alpha))
-				draw_rect(Rect2(1, -3, 2, 1), _slow_mo_color(Color(1.0, 1.0, 1.0), alpha))
-			else:
-				draw_rect(Rect2(-4, -1, 1, 2), _slow_mo_color(Color(1.0, 1.0, 1.0), alpha))
-				draw_rect(Rect2(2, -1, 1, 2), _slow_mo_color(Color(1.0, 1.0, 1.0), alpha))
-		"wasp":
-			_draw_wasp_miasma(alpha)
-			var wing_color := _slow_mo_color(Color(0.616, 0.0, 1.0, 0.4), alpha)
-			if wing_frame == 0:
-				draw_rect(Rect2(-2, -6, 2, 4), wing_color)
-				draw_rect(Rect2(0, -6, 2, 4), wing_color)
-			else:
-				draw_rect(Rect2(-4, -4, 2, 3), wing_color)
-				draw_rect(Rect2(2, -4, 2, 3), wing_color)
-			var purple := _slow_mo_color(Color(0.749, 0.353, 0.949), alpha)
-			draw_rect(Rect2(-3, -1, 2, 3), purple)
-			draw_rect(Rect2(-1, -1, 2, 3), purple)
-			draw_rect(Rect2(1, -1, 2, 3), purple)
-			draw_rect(Rect2(-1, -1, 1, 3), _slow_mo_color(Color(0.102, 0.039, 0.180), alpha))
-			draw_rect(Rect2(0, -1, 1, 3), _slow_mo_color(Color(0.102, 0.039, 0.180), alpha))
-			draw_rect(Rect2(3, -1, 2, 2), _slow_mo_color(Color(0.486, 0.227, 0.929), alpha))
-			draw_rect(Rect2(3, -1, 1, 1), _slow_mo_color(Color(0.224, 1.0, 0.078), alpha))
-			draw_rect(Rect2(4, 0, 1, 1), _slow_mo_color(Color(0.224, 1.0, 0.078), alpha))
-			draw_rect(Rect2(-4, 0, 2, 1), _slow_mo_color(Color(0.224, 1.0, 0.078), alpha))
-			draw_rect(Rect2(-5, 1, 1, 1), _slow_mo_color(Color(0.0, 1.0, 0.255), alpha))
-			draw_rect(Rect2(-4, 2, 1, 1), _slow_mo_color(Color(0.0, 1.0, 0.255), alpha))
-			draw_rect(Rect2(-2, 0, 1, 1), _slow_mo_color(Color(0.224, 1.0, 0.078), alpha))
-			draw_rect(Rect2(0, 0, 1, 1), _slow_mo_color(Color(0.224, 1.0, 0.078), alpha))
+	BugGuideDraw.draw_bug_sprite(
+		self,
+		bug_type,
+		Vector2.ZERO,
+		wing_frame,
+		alpha,
+		GameState.slow_mo_visual_blend
+	)
 
 func _draw_sprite() -> void:
 	_draw_sprite_with_alpha(1.0)

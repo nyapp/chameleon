@@ -17,6 +17,7 @@ var bgm_paused_by_menu: bool = false
 # ─── スコア・ゲームデータ ────────────────────────────────────
 var score: int = 0
 var flies_eaten: int = 0
+var bugs_eaten_by_type: Dictionary = _empty_bugs_eaten()
 var high_score: int = 0
 var level: int = 1
 var energy: float = 100.0
@@ -59,9 +60,17 @@ func set_state(new_state: String) -> void:
 func is_frozen() -> bool:
 	return frozen_by_menu
 
+func _empty_bugs_eaten() -> Dictionary:
+	return {"common": 0, "gnat": 0, "firefly": 0, "wasp": 0}
+
+func record_bug_eaten(bug_type: String) -> void:
+	if bugs_eaten_by_type.has(bug_type):
+		bugs_eaten_by_type[bug_type] += 1
+
 func start_game() -> void:
 	score = 0
 	flies_eaten = 0
+	bugs_eaten_by_type = _empty_bugs_eaten()
 	level = 1
 	energy = 100.0
 	combo = 0
@@ -74,6 +83,7 @@ func start_game() -> void:
 func return_to_title() -> void:
 	score = 0
 	flies_eaten = 0
+	bugs_eaten_by_type = _empty_bugs_eaten()
 	level = 1
 	energy = 100.0
 	combo = 0
