@@ -22,6 +22,7 @@ var high_score: int = 0
 var level: int = 1
 var energy: float = 100.0
 const ENERGY_DEPLETION_BASE: float = 0.06  # /frame @60fps
+const FLIES_PER_LEVEL: int = 5
 
 # ─── コンボシステム ─────────────────────────────────────────
 var combo: int = 0
@@ -148,9 +149,19 @@ func desaturate_color(color: Color, amount: float) -> Color:
 	return color.lerp(Color(gray, gray, gray, color.a), clampf(amount, 0.0, 1.0))
 
 # ─── レベルアップ判定 ────────────────────────────────────────
+func get_level_progress() -> Dictionary:
+	var progress_flies: int = flies_eaten % FLIES_PER_LEVEL
+	var remaining: int = FLIES_PER_LEVEL - progress_flies
+	return {
+		"progress_flies": progress_flies,
+		"remaining": remaining,
+		"ratio": float(progress_flies) / float(FLIES_PER_LEVEL),
+		"next_level": level + 1,
+	}
+
 func check_level_up() -> bool:
-	## スコア1200点ごとにレベルアップ（JSと同一ロジック）
-	var target_level: int = int(score / 1200) + 1
+	## ハエ5匹ごとにレベルアップ（毒バチはペナルティなし）
+	var target_level: int = int(floor(float(flies_eaten) / float(FLIES_PER_LEVEL))) + 1
 	if target_level > level:
 		level = target_level
 		level_up.emit(level)

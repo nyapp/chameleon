@@ -39,11 +39,41 @@ func _draw_score_bar(gs: Node) -> void:
 
 func _draw_level(gs: Node) -> void:
 	var font := _game_font()
+	const FONT_SIZE: int = 7
+	const LEVEL_Y: float = 23.0
 	var level_text: String = "LEVEL %d" % gs.level
-	draw_string(font, Vector2(1, 24), level_text,
-		HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 7, Color(0, 0, 0, 0.85))
-	draw_string(font, Vector2(0, 23), level_text,
-		HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 7, Color(1.0, 0.918, 0.0))
+	draw_string(font, Vector2(1, LEVEL_Y + 1.0), level_text,
+		HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, FONT_SIZE, Color(0, 0, 0, 0.85))
+	draw_string(font, Vector2(0, LEVEL_Y), level_text,
+		HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, FONT_SIZE, Color(1.0, 0.918, 0.0))
+	_draw_level_progress_dots(gs, font, FONT_SIZE, level_text, LEVEL_Y)
+
+func _draw_level_progress_dots(gs: Node, font: Font, font_size: int, level_text: String, level_y: float) -> void:
+	const DOT_RADIUS: float = 2.0
+	const DOT_EMPTY: Color = Color(0.118, 0.118, 0.176)
+	const DOT_BORDER: Color = Color(0.231, 0.243, 0.302)
+	const DOT_FILL: Color = Color(1.0, 0.0, 0.498)
+	const DOT_GLOW: Color = Color(0.616, 0.0, 1.0, 0.5)
+
+	var text_size: Vector2 = font.get_string_size(level_text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+	var row_left: float = (float(CANVAS_W) - text_size.x) * 0.5
+	var row_w: float = text_size.x
+	var filled_count: int = gs.flies_eaten % GameState.FLIES_PER_LEVEL
+	var total: int = GameState.FLIES_PER_LEVEL
+	var diameter: float = DOT_RADIUS * 2.0
+	var step: float = (row_w - diameter) / float(total - 1) if total > 1 else 0.0
+	var start_x: float = row_left + DOT_RADIUS
+	var center_y: float = level_y + 6.0
+
+	for i in total:
+		var center := Vector2(start_x + float(i) * step, center_y)
+		var filled := i < filled_count
+		if filled:
+			draw_circle(center, DOT_RADIUS + 0.5, DOT_GLOW)
+			draw_circle(center, DOT_RADIUS, DOT_FILL)
+		else:
+			draw_circle(center, DOT_RADIUS, DOT_EMPTY)
+			draw_arc(center, DOT_RADIUS - 0.5, 0.0, TAU, 12, DOT_BORDER, 1.0)
 
 func _draw_combo(gs: Node) -> void:
 	if gs.combo <= 1:

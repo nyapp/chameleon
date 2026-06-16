@@ -33,12 +33,12 @@ anchors_preset = 0
 offset_left = 568.0
 offset_top = 250.0
 offset_right = 894.0
-offset_bottom = 806.0
+offset_bottom = 822.0
 
 [node name="CabinetFrame" type="Control" parent="CabinetInner" unique_id=1875028892]
 anchors_preset = 0
 offset_right = 326.0
-offset_bottom = 556.0
+offset_bottom = 572.0
 mouse_filter = 2
 script = ExtResource("2_frame")
 
@@ -58,7 +58,7 @@ anchors_preset = 0
 offset_left = 15.0
 offset_top = 98.0
 offset_right = 311.0
-offset_bottom = 378.0
+offset_bottom = 394.0
 mouse_filter = 2
 script = ExtResource("4_bezel")
 
@@ -98,9 +98,9 @@ script = ExtResource("10_pause_overlay")
 clip_contents = true
 anchors_preset = 0
 offset_left = 15.0
-offset_top = 393.0
+offset_top = 409.0
 offset_right = 311.0
-offset_bottom = 541.0
+offset_bottom = 557.0
 mouse_filter = 2
 script = ExtResource("7_deck")
 
@@ -126,7 +126,7 @@ script = ExtResource("9_pause")
 [node name="CabinetFrameOverlay" type="Control" parent="CabinetInner" unique_id=919860641]
 anchors_preset = 0
 offset_right = 326.0
-offset_bottom = 556.0
+offset_bottom = 572.0
 mouse_filter = 2
 script = ExtResource("2_frame")
 overlay_only = true
