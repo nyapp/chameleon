@@ -1,0 +1,4 @@
+[submodule "ios/plugin_src/godot"]
+	path = ios/plugin_src/godot
+	url = https://github.com/godotengine/godot.git
+	ignore = untracked
