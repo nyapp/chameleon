@@ -33,12 +33,12 @@ anchors_preset = 0
 offset_left = 568.0
 offset_top = 250.0
 offset_right = 894.0
-offset_bottom = 822.0
+offset_bottom = 858.0
 
 [node name="CabinetFrame" type="Control" parent="CabinetInner" unique_id=1875028892]
 anchors_preset = 0
 offset_right = 326.0
-offset_bottom = 572.0
+offset_bottom = 608.0
 mouse_filter = 2
 script = ExtResource("2_frame")
 
@@ -100,17 +100,17 @@ anchors_preset = 0
 offset_left = 15.0
 offset_top = 409.0
 offset_right = 311.0
-offset_bottom = 557.0
+offset_bottom = 593.0
 mouse_filter = 2
 script = ExtResource("7_deck")
 
 [node name="VirtualAnalogStick" type="Control" parent="CabinetInner/ControlDeck" unique_id=1690637287]
-custom_minimum_size = Vector2(100, 100)
+custom_minimum_size = Vector2(128, 128)
 anchors_preset = 0
-offset_left = 98.0
-offset_top = 35.0
-offset_right = 198.0
-offset_bottom = 135.0
+offset_left = 84.0
+offset_top = 39.0
+offset_right = 212.0
+offset_bottom = 167.0
 script = ExtResource("8_stick")
 
 [node name="CabinetPauseButton" type="Control" parent="CabinetInner/ControlDeck" unique_id=1325334087]
@@ -126,7 +126,7 @@ script = ExtResource("9_pause")
 [node name="CabinetFrameOverlay" type="Control" parent="CabinetInner" unique_id=919860641]
 anchors_preset = 0
 offset_right = 326.0
-offset_bottom = 572.0
+offset_bottom = 608.0
 mouse_filter = 2
 script = ExtResource("2_frame")
 overlay_only = true

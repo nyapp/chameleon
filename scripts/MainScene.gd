@@ -29,6 +29,7 @@ var has_mouse_target: bool = false
 # アナログスティック入力（筐体 UI からシグナル経由）
 var stick_aiming: bool = false
 var stick_direction: Vector2 = Vector2.ZERO
+var _last_idle_action_frame: int = -1
 
 # ─── Bug リソースシーン ──────────────────────────────────────
 const BUG_SCRIPT: GDScript = preload("res://scripts/Bug.gd")
@@ -56,7 +57,7 @@ func on_stick_pressed() -> void:
 		"TITLE":
 			_start_game()
 		"GAMEOVER":
-			_reset_game()
+			_dismiss_game_over()
 
 func on_stick_released(direction: Vector2, magnitude: float, deadzone: float = 0.25) -> void:
 	stick_aiming = false
@@ -265,7 +266,9 @@ func _input(event: InputEvent) -> void:
 		has_mouse_target = true
 
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if event.pressed:
+		if DisplayServer.is_touchscreen_available():
+			pass
+		elif event.pressed:
 			var local_pos: Vector2 = get_local_mouse_position()
 			if gs.state == "PLAYING" and _is_hud_pause_zone(local_pos):
 				_toggle_pause()
@@ -302,11 +305,17 @@ func _is_hud_pause_zone(local_pos: Vector2) -> bool:
 	return local_pos.y >= 0.0 and local_pos.y <= HUD_PAUSE_TAP_H
 
 func _on_screen_tapped() -> void:
+	var frame: int = Engine.get_process_frames()
+	if GameState.state in ["TITLE", "GAMEOVER"]:
+		if frame == _last_idle_action_frame:
+			return
+		_last_idle_action_frame = frame
+
 	match GameState.state:
 		"TITLE":
 			_start_game()
 		"GAMEOVER":
-			_reset_game()
+			_dismiss_game_over()
 		"PLAYING":
 			_trigger_shoot()
 
@@ -327,16 +336,15 @@ func _start_game() -> void:
 	_spawn_initial_bugs()
 	AudioManager.start_bgm()
 
-func _reset_game() -> void:
-	await get_tree().create_timer(0.3).timeout
-	_start_game()
+func _dismiss_game_over() -> void:
+	return_to_title()
 
 func toggle_pause_menu() -> void:
 	if GameState.state in ["PLAYING", "PAUSED"]:
 		_toggle_pause()
 
 func return_to_title() -> void:
-	if GameState.state not in ["PLAYING", "PAUSED"]:
+	if GameState.state not in ["PLAYING", "PAUSED", "GAMEOVER"]:
 		return
 	AudioManager.stop_bgm()
 	GameState.return_to_title()

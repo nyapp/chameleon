@@ -10,24 +10,24 @@ signal released(direction: Vector2, magnitude: float)
 signal pressed
 
 @export_group("Feel")
-@export var radius: float = 50.0:
+@export var radius: float = 64.0:
 	set(value):
 		radius = value
 		_update_size()
 @export var deadzone: float = 0.25:
 	set(value):
 		deadzone = value
-@export var knob_max: float = 39.0:
+@export var knob_max: float = 50.0:
 	set(value):
 		knob_max = value
 @export var invert_aim: bool = true
 
 @export_group("Knob")
-@export var knob_outer_radius: float = 21.0:
+@export var knob_outer_radius: float = 27.0:
 	set(value):
 		knob_outer_radius = value
 		queue_redraw()
-@export var knob_inner_radius: float = 17.0:
+@export var knob_inner_radius: float = 22.0:
 	set(value):
 		knob_inner_radius = value
 		queue_redraw()
@@ -67,7 +67,7 @@ signal pressed
 	set(value):
 		operable_edge_color = value
 		queue_redraw()
-@export var operable_arc_width: float = 3.5:
+@export var operable_arc_width: float = 4.3:
 	set(value):
 		operable_arc_width = value
 		queue_redraw()
@@ -90,10 +90,14 @@ func _update_size() -> void:
 func _process(_delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
-	modulate.a = 1.0 if GameState.state == "PLAYING" else 0.55
+	var playing: bool = GameState.state == "PLAYING"
+	modulate.a = 1.0 if playing else 0.55
+	mouse_filter = Control.MOUSE_FILTER_STOP if playing else Control.MOUSE_FILTER_IGNORE
 
 func _gui_input(event: InputEvent) -> void:
 	if Engine.is_editor_hint():
+		return
+	if GameState.state != "PLAYING":
 		return
 	if event is InputEventScreenTouch:
 		if event.pressed:

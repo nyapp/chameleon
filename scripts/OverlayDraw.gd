@@ -72,16 +72,34 @@ func _draw_game_over_screen(gs: Node) -> void:
 	draw_rect(Rect2(0, 0, CANVAS_W, CANVAS_H), Color(0.059, 0.0, 0.039, 0.75))
 
 	draw_string(font,
-		Vector2(0, 70),
+		Vector2(0, 66),
 		"GAME OVER", HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 14,
 		Color(1.0, 0.231, 0.188))  # #ff3b30
 
-	draw_string(font,
-		Vector2(0, 92),
-		"YOUR SCORE: %d" % gs.score, HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 8,
-		Color.WHITE)
+	var breakdown_bottom: float = BugGuideDraw.draw_result_breakdown(
+		self, font, CANVAS_W, 84.0, gs.bugs_eaten_by_type)
 
-	var next_y: float = BugGuideDraw.draw_result_breakdown(self, font, CANVAS_W, 104.0, gs.bugs_eaten_by_type)
+	const SCORE_LABEL_SIZE: int = 7
+	const SCORE_VALUE_SIZE: int = 14
+	const SCORE_VALUE_COLOR := Color(1.0, 0.918, 0.0)
+	const SCORE_SECTION_GAP: float = 10.0
+	const SCORE_LABEL_VALUE_GAP: float = 22.0
+	const SCORE_ACTION_GAP: float = 28.0
+
+	var score_label_y: float = breakdown_bottom + SCORE_SECTION_GAP
+	var score_value_y: float = score_label_y + SCORE_LABEL_VALUE_GAP
+
+	draw_string(font,
+		Vector2(0, score_label_y),
+		"YOUR SCORE", HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, SCORE_LABEL_SIZE,
+		Color(0.82, 0.82, 0.82))
+
+	draw_string(font,
+		Vector2(0, score_value_y),
+		"%d" % gs.score, HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, SCORE_VALUE_SIZE,
+		SCORE_VALUE_COLOR)
+
+	var next_y: float = score_value_y
 
 	if gs.score >= gs.high_score and gs.score > 0:
 		draw_string(font,
@@ -92,10 +110,10 @@ func _draw_game_over_screen(gs: Node) -> void:
 
 	var flash: bool = int(Time.get_ticks_msec() / 400) % 2 == 0
 	var fc: Color = Color(0.0, 0.941, 1.0) if flash else Color(0.306, 0.306, 0.427)
-	var retry_label: String = "TAP TO RETRY" if DisplayServer.is_touchscreen_available() else "CLICK OR SPACE TO RETRY"
+	var action_label: String = "TAP TO TITLE" if DisplayServer.is_touchscreen_available() else "CLICK OR SPACE TO TITLE"
 	draw_string(font,
-		Vector2(0, maxf(next_y + 14.0, 168.0)),
-		retry_label, HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 8, fc)
+		Vector2(0, maxf(next_y + SCORE_ACTION_GAP, 180.0)),
+		action_label, HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 8, fc)
 
 const _LOW_HUNGER_COLOR := Color(1.0, 0.231, 0.188)  # #ff3b30
 const _LOW_HUNGER_OPACITY := 0.55  # JS版より控えめ（リング近似の重なり補正）
