@@ -31,7 +31,7 @@ CabinetFonts="*res://scripts/CabinetFonts.gd"
 [display]
 
 window/size/viewport_width=326
-window/size/viewport_height=608
+window/size/viewport_height=620
 window/size/window_width_override=978
 window/size/window_height_override=1824
 window/stretch/mode="canvas_items"

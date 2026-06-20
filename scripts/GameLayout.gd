@@ -14,7 +14,7 @@ const PLAY_H: int = SCREEN_H
 
 # 筐体パーツ（CSS 相当）
 const CABINET_PAD: int = 15
-const MARQUEE_H: int = 68
+const MARQUEE_H: int = 80
 const MARQUEE_GAP: int = 15
 const BEZEL_OUTER_PAD: int = 12
 const BEZEL_INNER_PAD: int = 8
@@ -26,7 +26,7 @@ const CONTROL_DECK_HEADER_H: int = 22
 const INNER_W: int = SCREEN_W + BEZEL_STACK_PAD * 2  # 296
 const CABINET_W: int = INNER_W + CABINET_PAD * 2  # 326
 const SCREEN_BEZEL_H: int = BEZEL_STACK_PAD * 2 + SCREEN_H  # 296
-const CABINET_H: int = CABINET_PAD * 2 + MARQUEE_H + MARQUEE_GAP + SCREEN_BEZEL_H + CONTROL_GAP + CONTROL_DECK_H  # 608
+const CABINET_H: int = CABINET_PAD * 2 + MARQUEE_H + MARQUEE_GAP + SCREEN_BEZEL_H + CONTROL_GAP + CONTROL_DECK_H  # 620
 # project.godot の window/size/viewport_height も CABINET_H と一致させること
 
 # 筐体内 Y 座標

@@ -25,13 +25,13 @@ extends Control
 	set(value):
 		subtitle_letter_spacing = value
 		queue_redraw()
-@export_range(0.0, 1.0) var title_y_ratio: float = 0.54:
+@export var text_padding_v: float = 16.0:
 	set(value):
-		title_y_ratio = value
+		text_padding_v = maxf(value, 0.0)
 		queue_redraw()
-@export_range(0.0, 1.0) var subtitle_y_ratio: float = 0.80:
+@export var title_subtitle_gap: float = 18.0:
 	set(value):
-		subtitle_y_ratio = value
+		title_subtitle_gap = maxf(value, 0.0)
 		queue_redraw()
 
 @export_group("Shape")
@@ -132,13 +132,24 @@ func _draw() -> void:
 	var pulse := 0.5 + 0.5 * sin(_pulse)
 	var glow_alpha := glow_alpha_min + pulse * glow_alpha_range
 
+	var baselines := _text_baselines(font)
 	var title_w := font.get_string_size(title_text, HORIZONTAL_ALIGNMENT_LEFT, -1, title_font_size).x
-	var title_pos := Vector2((size.x - title_w) * 0.5, size.y * title_y_ratio)
+	var title_pos := Vector2((size.x - title_w) * 0.5, baselines.x)
 	_draw_neon_title(font, title_text, title_pos, title_font_size, glow_alpha)
 
 	var sub_w := _spaced_text_width(font, subtitle_text, subtitle_font_size, subtitle_letter_spacing)
-	var sub_pos := Vector2((size.x - sub_w) * 0.5, size.y * subtitle_y_ratio)
+	var sub_pos := Vector2((size.x - sub_w) * 0.5, baselines.y)
 	_draw_spaced_neon_text(font, subtitle_text, sub_pos, subtitle_font_size, subtitle_letter_spacing, neon_cyan, 0.9)
+
+func _text_baselines(font: Font) -> Vector2:
+	var title_ascent := font.get_ascent(title_font_size)
+	var sub_descent := font.get_descent(subtitle_font_size)
+	var block_h := title_ascent + title_subtitle_gap + sub_descent
+	var block_top := text_padding_v
+	if size.y >= block_h + text_padding_v * 2.0:
+		block_top = (size.y - block_h) * 0.5
+	var title_baseline := block_top + title_ascent
+	return Vector2(title_baseline, title_baseline + title_subtitle_gap)
 
 func _draw_rounded_rect(rect: Rect2, color: Color, radius: float, filled: bool, line_width: float = 1.0) -> void:
 	var style := StyleBoxFlat.new()
