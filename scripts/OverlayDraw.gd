@@ -188,24 +188,26 @@ func _draw_game_over_screen(gs: Node) -> void:
 	var font := _game_font()
 	draw_rect(Rect2(0, 0, CANVAS_W, CANVAS_H), Color(0.059, 0.0, 0.039, 0.75))
 
+	const CONTENT_Y_OFFSET: float = -14.0
+
 	draw_string(font,
-		Vector2(0, 66),
+		Vector2(0, 66.0 + CONTENT_Y_OFFSET),
 		"GAME OVER", HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 14,
 		Color(1.0, 0.231, 0.188))  # #ff3b30
 
 	var breakdown_bottom: float = BugGuideDraw.draw_result_breakdown(
-		self, font, CANVAS_W, 84.0, gs.bugs_eaten_by_type)
+		self, font, CANVAS_W, 84.0 + CONTENT_Y_OFFSET, gs.bugs_eaten_by_type)
 
 	const SCORE_LABEL_SIZE: int = 7
 	const SCORE_VALUE_SIZE: int = 14
 	const NEW_HIGHSCORE_SIZE: int = 8
 	const ACTION_SIZE: int = 8
 	const SCORE_VALUE_COLOR := Color(1.0, 0.918, 0.0)
-	const SCORE_SECTION_GAP: float = 8.0
-	const SCORE_LABEL_VALUE_GAP: float = 18.0
+	const SCORE_SECTION_GAP: float = 16.0
+	const SCORE_LABEL_VALUE_GAP: float = 22.0
 	const NEW_HIGHSCORE_GAP: float = 10.0
 	const SCORE_ACTION_GAP: float = 14.0
-	const ACTION_MIN_Y: float = 228.0
+	const ACTION_MIN_Y: float = 228.0 + CONTENT_Y_OFFSET
 
 	var score_label_y: float = breakdown_bottom + SCORE_SECTION_GAP
 	var score_value_y: float = score_label_y + SCORE_LABEL_VALUE_GAP
