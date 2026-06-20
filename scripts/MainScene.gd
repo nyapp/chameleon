@@ -73,6 +73,9 @@ func on_stick_released(direction: Vector2, magnitude: float, deadzone: float = 0
 	has_mouse_target = false
 	_trigger_shoot()
 
+func on_fire_pressed() -> void:
+	_trigger_shoot()
+
 # ─── ブートアニメ ────────────────────────────────────────────
 func _trigger_boot_animation() -> void:
 	pass

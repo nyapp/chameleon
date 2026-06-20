@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://bhj87lcup12po" path="res://scripts/CabinetControlDeck.gd" id="7_deck"]
 [ext_resource type="Script" uid="uid://0nkjlt4rcl4m" path="res://scripts/VirtualAnalogStick.gd" id="8_stick"]
 [ext_resource type="Script" uid="uid://horu74i16gws" path="res://scripts/CabinetPauseButton.gd" id="9_pause"]
+[ext_resource type="Script" uid="uid://d0j5vojbokfc" path="res://scripts/CabinetFireButton.gd" id="11_fire"]
 [ext_resource type="Script" uid="uid://c6qghfvyxr05g" path="res://scripts/CabinetPauseOverlay.gd" id="10_pause_overlay"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_crt"]
@@ -107,11 +108,20 @@ script = ExtResource("7_deck")
 [node name="VirtualAnalogStick" type="Control" parent="CabinetInner/ControlDeck" unique_id=1690637287]
 custom_minimum_size = Vector2(128, 128)
 anchors_preset = 0
-offset_left = 84.0
+offset_left = 24.0
 offset_top = 39.0
-offset_right = 212.0
+offset_right = 152.0
 offset_bottom = 167.0
 script = ExtResource("8_stick")
+
+[node name="CabinetFireButton" type="Control" parent="CabinetInner/ControlDeck"]
+custom_minimum_size = Vector2(102, 128)
+anchors_preset = 0
+offset_left = 170.0
+offset_top = 39.0
+offset_right = 272.0
+offset_bottom = 167.0
+script = ExtResource("11_fire")
 
 [node name="CabinetPauseButton" type="Control" parent="CabinetInner/ControlDeck" unique_id=1325334087]
 z_index = 10

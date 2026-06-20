@@ -51,6 +51,7 @@ extends Control
 @onready var cabinet_inner: Control = $CabinetInner
 @onready var game_viewport: SubViewport = $CabinetInner/ScreenBezel/SubViewportContainer/GameSubViewport
 @onready var virtual_analog_stick: VirtualAnalogStick = $CabinetInner/ControlDeck/VirtualAnalogStick
+@onready var fire_button: CabinetFireButton = $CabinetInner/ControlDeck/CabinetFireButton
 @onready var pause_button: CabinetPauseButton = $CabinetInner/ControlDeck/CabinetPauseButton
 @onready var pause_overlay: Control = $CabinetInner/ScreenBezel/CabinetPauseOverlay
 
@@ -74,7 +75,7 @@ func _request_layout() -> void:
 		call_deferred("_apply_layout")
 
 func _apply_layout() -> void:
-	if cabinet_inner == null or virtual_analog_stick == null or pause_button == null or pause_overlay == null:
+	if cabinet_inner == null or virtual_analog_stick == null or fire_button == null or pause_button == null or pause_overlay == null:
 		return
 
 	var vp_size := get_viewport_rect().size
@@ -133,15 +134,31 @@ func _apply_layout() -> void:
 	deck.position = Vector2(pad, y_control)
 	deck.size = Vector2(inner_w, control_deck_h)
 
-	var stick_size := _stick_size()
-	var content_h := float(control_deck_h) - float(GameLayout.CONTROL_DECK_HEADER_H)
-	var stick_y := float(GameLayout.CONTROL_DECK_HEADER_H) + maxf(0.0, (content_h - stick_size.y) * 0.5)
-	virtual_analog_stick.position = Vector2(
-		(inner_w - stick_size.x) * 0.5,
-		stick_y
-	)
+	_layout_control_deck_controls(inner_w)
 
 	_layout_pause_button(deck, inner_w)
+
+func _layout_control_deck_controls(inner_w: float) -> void:
+	const CONTENT_PAD_X := 24.0
+	const STICK_FIRE_GAP := 18.0
+
+	var stick_size := _stick_size()
+	var content_h := float(control_deck_h) - float(GameLayout.CONTROL_DECK_HEADER_H)
+	var content_y := float(GameLayout.CONTROL_DECK_HEADER_H)
+
+	var stick_y := content_y + maxf(0.0, (content_h - stick_size.y) * 0.5)
+	var stick_x := CONTENT_PAD_X
+	var fire_w := inner_w - CONTENT_PAD_X * 2.0 - stick_size.x - STICK_FIRE_GAP
+	fire_w = maxf(fire_w, 88.0)
+
+	fire_button.set_panel_size(Vector2(fire_w, stick_size.y))
+	var fire_size := fire_button.size
+
+	var fire_x := inner_w - CONTENT_PAD_X - fire_size.x
+
+	virtual_analog_stick.position = Vector2(stick_x, stick_y)
+	fire_button.position = Vector2(fire_x, stick_y)
+	fire_button.z_index = 5
 
 func _layout_pause_button(deck: Control, _inner_w: float) -> void:
 	if pause_button == null:
@@ -181,6 +198,11 @@ func _stick_size() -> Vector2:
 	var diameter := virtual_analog_stick.radius * 2.0
 	return Vector2(diameter, diameter)
 
+func _fire_button_size() -> Vector2:
+	if fire_button.size.x > 0.0 and fire_button.size.y > 0.0:
+		return fire_button.size
+	return fire_button.panel_size
+
 func _connect_game() -> void:
 	await get_tree().process_frame
 	_main_scene = game_viewport.get_node_or_null("MainScene")
@@ -200,12 +222,18 @@ func _connect_controls() -> void:
 	virtual_analog_stick.aim_changed.connect(_on_stick_aim_changed)
 	virtual_analog_stick.released.connect(_on_stick_released)
 	pause_button.pressed.connect(_on_pause_button_pressed)
+	fire_button.pressed.connect(_on_fire_button_pressed)
 
 func _on_pause_button_pressed() -> void:
 	var main_scene := _get_main_scene()
 	if main_scene and main_scene.has_method("toggle_pause_menu"):
 		main_scene.toggle_pause_menu()
 		HapticManager.play_ui_tap()
+
+func _on_fire_button_pressed() -> void:
+	var main_scene := _get_main_scene()
+	if main_scene and main_scene.has_method("on_fire_pressed"):
+		main_scene.on_fire_pressed()
 
 func _on_stick_pressed() -> void:
 	var main_scene := _get_main_scene()
