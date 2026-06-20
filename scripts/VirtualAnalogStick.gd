@@ -89,12 +89,24 @@ func _update_size() -> void:
 	size = custom_minimum_size
 	queue_redraw()
 
+func _is_interactive() -> bool:
+	return GameState.state in ["TITLE", "GAMEOVER", "PLAYING"]
+
+func _is_playing() -> bool:
+	return GameState.state == "PLAYING"
+
+func _knob_center() -> Vector2:
+	return size * 0.5 + _knob_offset
+
+func _is_knob_hit(local_pos: Vector2) -> bool:
+	return local_pos.distance_to(_knob_center()) <= knob_outer_radius
+
 func _process(_delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
-	var playing: bool = GameState.state == "PLAYING"
-	modulate.a = 1.0 if playing else 0.55
-	mouse_filter = Control.MOUSE_FILTER_STOP if playing else Control.MOUSE_FILTER_IGNORE
+	var interactive: bool = _is_interactive()
+	modulate.a = 1.0 if interactive else 0.55
+	mouse_filter = Control.MOUSE_FILTER_STOP if interactive else Control.MOUSE_FILTER_IGNORE
 
 func _on_game_state_changed(new_state: String) -> void:
 	if new_state != "PLAYING":
@@ -112,7 +124,14 @@ func _gui_input(event: InputEvent) -> void:
 			_finish_drag()
 			accept_event()
 			return
-	if GameState.state != "PLAYING":
+	if not _is_playing():
+		if GameState.state in ["TITLE", "GAMEOVER"]:
+			if event is InputEventScreenTouch and event.pressed and _is_knob_hit(event.position):
+				_emit_ui_tap()
+				accept_event()
+			elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed and _is_knob_hit(event.position):
+				_emit_ui_tap()
+				accept_event()
 		return
 	if event is InputEventScreenTouch:
 		if event.pressed:

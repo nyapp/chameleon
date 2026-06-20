@@ -75,17 +75,20 @@ func _update_size() -> void:
 func _button_rect() -> Rect2:
 	return Rect2(Vector2.ZERO, size)
 
+func _is_actionable() -> bool:
+	return GameState.state in ["TITLE", "GAMEOVER", "PLAYING"]
+
 func _process(_delta: float) -> void:
 	if Engine.is_editor_hint():
 		return
-	var playing: bool = GameState.state == "PLAYING"
-	modulate.a = 1.0 if playing else 0.45
-	mouse_filter = Control.MOUSE_FILTER_STOP if playing else Control.MOUSE_FILTER_IGNORE
+	var actionable: bool = _is_actionable()
+	modulate.a = 1.0 if actionable else 0.45
+	mouse_filter = Control.MOUSE_FILTER_STOP if actionable else Control.MOUSE_FILTER_IGNORE
 
 func _gui_input(event: InputEvent) -> void:
 	if Engine.is_editor_hint():
 		return
-	if GameState.state != "PLAYING":
+	if not _is_actionable():
 		return
 
 	var local_pos := Vector2.ZERO

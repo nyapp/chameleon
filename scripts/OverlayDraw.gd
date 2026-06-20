@@ -110,7 +110,7 @@ func _draw_title_screen() -> void:
 
 	var flash: bool = int(Time.get_ticks_msec() / 400) % 2 == 0
 	var flash_color: Color = Color.WHITE if flash else Color(0.306, 0.306, 0.427)
-	var start_label: String = "TAP TO START" if DisplayServer.is_touchscreen_available() else "PRESS FIRE OR SPACE"
+	var start_label: String = "TAP TO FIRE" if DisplayServer.is_touchscreen_available() else "PRESS FIRE OR SPACE"
 	draw_string(font,
 		Vector2(0, 130),
 		start_label, HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 8, flash_color)

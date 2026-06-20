@@ -78,7 +78,15 @@ func on_stick_released(direction: Vector2, magnitude: float, deadzone: float = 0
 	_trigger_shoot()
 
 func on_fire_pressed() -> void:
-	_trigger_shoot()
+	if GameState.state == "TITLE" and overlay_draw and overlay_draw.confirming_high_score_reset:
+		return
+	match GameState.state:
+		"TITLE":
+			_start_game()
+		"GAMEOVER":
+			_dismiss_game_over()
+		"PLAYING":
+			_trigger_shoot()
 
 # ─── ブートアニメ ────────────────────────────────────────────
 func _trigger_boot_animation() -> void:
