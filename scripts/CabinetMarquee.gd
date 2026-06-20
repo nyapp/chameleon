@@ -52,9 +52,6 @@ extends Control
 @export var pulse_speed: float = 2.0:
 	set(value):
 		pulse_speed = value
-@export var sweep_speed: float = 8.0:
-	set(value):
-		sweep_speed = value
 @export var glow_alpha_min: float = 0.45:
 	set(value):
 		glow_alpha_min = value
@@ -89,15 +86,10 @@ extends Control
 	set(value):
 		neon_cyan = value
 		queue_redraw()
-@export var sweep_alpha: float = 0.05:
-	set(value):
-		sweep_alpha = value
-		queue_redraw()
 
 const CabinetFontsScript := preload("res://scripts/CabinetFonts.gd")
 
 var _pulse: float = 0.0
-var _sweep: float = 0.0
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -105,15 +97,10 @@ func _ready() -> void:
 	queue_redraw()
 
 func _process(delta: float) -> void:
-	var needs_redraw := false
-	if pulse_speed > 0.0:
-		_pulse += delta * pulse_speed
-		needs_redraw = true
-	if sweep_speed > 0.0:
-		_sweep = fmod(_sweep + delta / sweep_speed, 1.0)
-		needs_redraw = true
-	if needs_redraw:
-		queue_redraw()
+	if pulse_speed <= 0.0:
+		return
+	_pulse += delta * pulse_speed
+	queue_redraw()
 
 func _font_arcade() -> Font:
 	return CabinetFontsScript.get_arcade_font()
@@ -125,8 +112,6 @@ func _draw() -> void:
 
 	var inner := panel.grow(-inner_glow_inset)
 	_draw_rounded_rect(inner, Color(neon_cyan.r, neon_cyan.g, neon_cyan.b, inner_glow_alpha), corner_radius - 1.0, false, 1.0)
-
-	_draw_sweep(panel)
 
 	var font := _font_arcade()
 	var pulse := 0.5 + 0.5 * sin(_pulse)
@@ -161,20 +146,6 @@ func _draw_rounded_rect(rect: Rect2, color: Color, radius: float, filled: bool, 
 		style.border_color = color
 		style.set_border_width_all(maxi(int(line_width), 1))
 	style.draw(get_canvas_item(), rect)
-
-func _draw_sweep(panel: Rect2) -> void:
-	var span := maxf(panel.size.x, panel.size.y) * 2.0
-	var offset := lerpf(-span, span, _sweep)
-	var stripe_w := span * 0.06
-	var center := panel.get_center() + Vector2(offset, offset)
-	var half := span * 0.5
-	var points := PackedVector2Array([
-		center + Vector2(-half, -stripe_w),
-		center + Vector2(half, -stripe_w),
-		center + Vector2(half, stripe_w),
-		center + Vector2(-half, stripe_w),
-	])
-	draw_colored_polygon(points, Color(1.0, 1.0, 1.0, sweep_alpha))
 
 func _draw_neon_title(font: Font, text: String, pos: Vector2, font_size: int, glow_alpha: float) -> void:
 	var layers := [
