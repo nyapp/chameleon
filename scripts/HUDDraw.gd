@@ -12,6 +12,9 @@ const CANVAS_H: int = 240
 func _draw() -> void:
 	var gs: Node = GameState  # Autoload参照
 
+	if gs.state == "GAMEOVER":
+		return
+
 	if gs.state not in ["PLAYING", "PAUSED"]:
 		_draw_score_bar(gs)
 		return
@@ -27,15 +30,17 @@ func _game_font() -> Font:
 
 func _draw_score_bar(gs: Node) -> void:
 	var font := _game_font()
-	# スコア表示（左上）
-	var score_str: String = "SCORE:%s" % str(gs.score).lpad(6, "0")
-	draw_string(font, Vector2(8, 12), score_str,
-		HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color.WHITE)
+	const FONT_SIZE: int = 7
+	const MARGIN_X: float = 8.0
+	const BASELINE_Y: float = 12.0
 
-	# ハイスコア表示（右寄り）
+	var score_str: String = "SCORE:%s" % str(gs.score).lpad(6, "0")
+	draw_string(font, Vector2(MARGIN_X, BASELINE_Y), score_str,
+		HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE, Color.WHITE)
+
 	var hi_str: String = "HI-SCORE:%s" % str(gs.high_score).lpad(6, "0")
-	draw_string(font, Vector2(138, 12), hi_str,
-		HORIZONTAL_ALIGNMENT_LEFT, -1, 7, Color.WHITE)
+	draw_string(font, Vector2(CANVAS_W - MARGIN_X, BASELINE_Y), hi_str,
+		HORIZONTAL_ALIGNMENT_RIGHT, -1, FONT_SIZE, Color.WHITE)
 
 func _draw_level(gs: Node) -> void:
 	var font := _game_font()

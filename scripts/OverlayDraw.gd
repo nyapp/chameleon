@@ -81,13 +81,18 @@ func _draw_game_over_screen(gs: Node) -> void:
 
 	const SCORE_LABEL_SIZE: int = 7
 	const SCORE_VALUE_SIZE: int = 14
+	const NEW_HIGHSCORE_SIZE: int = 8
+	const ACTION_SIZE: int = 8
 	const SCORE_VALUE_COLOR := Color(1.0, 0.918, 0.0)
-	const SCORE_SECTION_GAP: float = 10.0
-	const SCORE_LABEL_VALUE_GAP: float = 22.0
-	const SCORE_ACTION_GAP: float = 28.0
+	const SCORE_SECTION_GAP: float = 8.0
+	const SCORE_LABEL_VALUE_GAP: float = 18.0
+	const NEW_HIGHSCORE_GAP: float = 10.0
+	const SCORE_ACTION_GAP: float = 14.0
+	const ACTION_MIN_Y: float = 228.0
 
 	var score_label_y: float = breakdown_bottom + SCORE_SECTION_GAP
 	var score_value_y: float = score_label_y + SCORE_LABEL_VALUE_GAP
+	var score_str := "%d" % gs.score
 
 	draw_string(font,
 		Vector2(0, score_label_y),
@@ -96,24 +101,26 @@ func _draw_game_over_screen(gs: Node) -> void:
 
 	draw_string(font,
 		Vector2(0, score_value_y),
-		"%d" % gs.score, HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, SCORE_VALUE_SIZE,
+		score_str, HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, SCORE_VALUE_SIZE,
 		SCORE_VALUE_COLOR)
 
-	var next_y: float = score_value_y
+	var content_bottom: float = score_value_y + font.get_descent(SCORE_VALUE_SIZE)
 
 	if gs.score >= gs.high_score and gs.score > 0:
+		var hs_baseline: float = content_bottom + NEW_HIGHSCORE_GAP + font.get_ascent(NEW_HIGHSCORE_SIZE)
 		draw_string(font,
-			Vector2(0, next_y + 6.0),
-			"NEW HIGH SCORE!", HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 8,
+			Vector2(0, hs_baseline),
+			"NEW HIGH SCORE!", HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, NEW_HIGHSCORE_SIZE,
 			Color(1.0, 0.918, 0.0))
-		next_y += 14.0
+		content_bottom = hs_baseline + font.get_descent(NEW_HIGHSCORE_SIZE)
 
 	var flash: bool = int(Time.get_ticks_msec() / 400) % 2 == 0
 	var fc: Color = Color(0.0, 0.941, 1.0) if flash else Color(0.306, 0.306, 0.427)
 	var action_label: String = "TAP TO TITLE" if DisplayServer.is_touchscreen_available() else "CLICK OR SPACE TO TITLE"
+	var action_baseline: float = maxf(content_bottom + SCORE_ACTION_GAP + font.get_ascent(ACTION_SIZE), ACTION_MIN_Y)
 	draw_string(font,
-		Vector2(0, maxf(next_y + SCORE_ACTION_GAP, 180.0)),
-		action_label, HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 8, fc)
+		Vector2(0, action_baseline),
+		action_label, HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, ACTION_SIZE, fc)
 
 const _LOW_HUNGER_COLOR := Color(1.0, 0.231, 0.188)  # #ff3b30
 const _LOW_HUNGER_OPACITY := 0.55  # JS版より控えめ（リング近似の重なり補正）
