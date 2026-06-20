@@ -8,6 +8,8 @@ extends Node2D
 const CANVAS_W: int = 256
 const CANVAS_H: int = 240
 const HUD_PAUSE_TAP_H: float = 28.0
+const TITLE_HI_SCORE_RESET_ZONE := Rect2(CANVAS_W * 0.55, 0.0, CANVAS_W * 0.45, 16.0)
+const HI_SCORE_DOUBLE_TAP_MS: int = 500
 const MAX_BUGS: int = 5
 const LEVEL_SCORE_THRESHOLD: int = 1200
 
@@ -30,6 +32,7 @@ var has_mouse_target: bool = false
 var stick_aiming: bool = false
 var stick_direction: Vector2 = Vector2.ZERO
 var _last_idle_action_frame: int = -1
+var _title_hi_score_tap_at_msec: int = -1
 
 # ─── Bug リソースシーン ──────────────────────────────────────
 const BUG_SCRIPT: GDScript = preload("res://scripts/Bug.gd")
@@ -53,6 +56,8 @@ func on_stick_aim_changed(direction: Vector2, _magnitude: float) -> void:
 	stick_direction = direction
 
 func on_stick_pressed() -> void:
+	if GameState.state == "TITLE" and overlay_draw and overlay_draw.confirming_high_score_reset:
+		return
 	match GameState.state:
 		"TITLE":
 			_start_game()
@@ -60,8 +65,7 @@ func on_stick_pressed() -> void:
 			_dismiss_game_over()
 
 func on_stick_released(direction: Vector2, magnitude: float, deadzone: float = 0.25) -> void:
-	stick_aiming = false
-	stick_direction = Vector2.ZERO
+	_reset_stick_aim()
 	if GameState.state != "PLAYING":
 		return
 	if magnitude < deadzone:
@@ -231,6 +235,7 @@ func _on_game_over() -> void:
 	HapticManager.play_game_over()
 	game_over_shake_time = GameState.GAME_OVER_SHAKE_DURATION
 	screen_shake = max(screen_shake, 12.0)
+	_reset_stick_aim()
 
 # ─── レベルアップ ────────────────────────────────────────────
 func _on_level_up(_new_level: int) -> void:
@@ -276,7 +281,7 @@ func _input(event: InputEvent) -> void:
 			if gs.state == "PLAYING" and _is_hud_pause_zone(local_pos):
 				_toggle_pause()
 				return
-			_on_screen_tapped()
+			_on_screen_tapped(local_pos)
 		elif not stick_aiming:
 			has_mouse_target = false
 
@@ -288,7 +293,7 @@ func _input(event: InputEvent) -> void:
 				return
 			mouse_target = local_pos
 			has_mouse_target = true
-			_on_screen_tapped()
+			_on_screen_tapped(local_pos)
 		elif not stick_aiming:
 			has_mouse_target = false
 
@@ -297,9 +302,20 @@ func _input(event: InputEvent) -> void:
 		has_mouse_target = true
 
 	if event is InputEventKey and event.pressed and not event.echo:
+		if overlay_draw and overlay_draw.confirming_high_score_reset and gs.state == "TITLE":
+			match event.keycode:
+				KEY_Y, KEY_ENTER:
+					overlay_draw.confirm_high_score_reset()
+					return
+				KEY_N, KEY_ESCAPE, KEY_BACKSPACE:
+					overlay_draw.close_high_score_reset_confirm()
+					return
 		match event.keycode:
 			KEY_SPACE:
 				_on_screen_tapped()
+			KEY_BACKSPACE:
+				if gs.state == "TITLE" and overlay_draw:
+					overlay_draw.open_high_score_reset_confirm()
 			KEY_ESCAPE:
 				if gs.state == "PLAYING":
 					_toggle_pause()
@@ -307,7 +323,7 @@ func _input(event: InputEvent) -> void:
 func _is_hud_pause_zone(local_pos: Vector2) -> bool:
 	return local_pos.y >= 0.0 and local_pos.y <= HUD_PAUSE_TAP_H
 
-func _on_screen_tapped() -> void:
+func _on_screen_tapped(local_pos: Vector2 = Vector2(-1.0, -1.0)) -> void:
 	var frame: int = Engine.get_process_frames()
 	if GameState.state in ["TITLE", "GAMEOVER"]:
 		if frame == _last_idle_action_frame:
@@ -316,11 +332,29 @@ func _on_screen_tapped() -> void:
 
 	match GameState.state:
 		"TITLE":
+			if overlay_draw and overlay_draw.confirming_high_score_reset:
+				if local_pos.x >= 0.0:
+					overlay_draw.handle_high_score_reset_confirm_tap(local_pos)
+				return
+			if local_pos.x >= 0.0 and _try_title_high_score_reset(local_pos):
+				return
 			_start_game()
 		"GAMEOVER":
 			_dismiss_game_over()
 		"PLAYING":
 			_trigger_shoot()
+
+func _try_title_high_score_reset(local_pos: Vector2) -> bool:
+	if not TITLE_HI_SCORE_RESET_ZONE.has_point(local_pos):
+		return false
+	var now: int = Time.get_ticks_msec()
+	if _title_hi_score_tap_at_msec >= 0 and now - _title_hi_score_tap_at_msec <= HI_SCORE_DOUBLE_TAP_MS:
+		if overlay_draw:
+			overlay_draw.open_high_score_reset_confirm()
+		_title_hi_score_tap_at_msec = -1
+		return true
+	_title_hi_score_tap_at_msec = now
+	return true
 
 func _trigger_shoot() -> void:
 	if GameState.state != "PLAYING":
@@ -331,6 +365,8 @@ func _trigger_shoot() -> void:
 
 # ─── ゲーム開始・リセット ────────────────────────────────────
 func _start_game() -> void:
+	if overlay_draw:
+		overlay_draw.close_high_score_reset_confirm()
 	GameState.bgm_paused_by_menu = false
 	GameState.start_game()
 	chameleon.deactivate_power_up()
@@ -358,11 +394,14 @@ func return_to_title() -> void:
 	screen_shake = 0.0
 	game_over_shake_time = 0.0
 	level_up_banner_time = 0.0
-	has_mouse_target = false
-	stick_aiming = false
-	stick_direction = Vector2.ZERO
+	_reset_stick_aim()
 	_spawn_initial_bugs()
 	HapticManager.play_ui_tap()
+
+func _reset_stick_aim() -> void:
+	stick_aiming = false
+	stick_direction = Vector2.ZERO
+	has_mouse_target = false
 
 # ─── ポーズ ──────────────────────────────────────────────────
 func _toggle_pause() -> void:

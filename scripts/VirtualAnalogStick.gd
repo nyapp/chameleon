@@ -81,6 +81,8 @@ func _ready() -> void:
 	_update_size()
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	queue_redraw()
+	if not Engine.is_editor_hint():
+		GameState.state_changed.connect(_on_game_state_changed)
 
 func _update_size() -> void:
 	custom_minimum_size = Vector2(radius * 2.0, radius * 2.0)
@@ -94,9 +96,22 @@ func _process(_delta: float) -> void:
 	modulate.a = 1.0 if playing else 0.55
 	mouse_filter = Control.MOUSE_FILTER_STOP if playing else Control.MOUSE_FILTER_IGNORE
 
+func _on_game_state_changed(new_state: String) -> void:
+	if new_state != "PLAYING":
+		_cancel_drag()
+
 func _gui_input(event: InputEvent) -> void:
 	if Engine.is_editor_hint():
 		return
+	if _active:
+		if event is InputEventScreenTouch and not event.pressed:
+			_finish_drag()
+			accept_event()
+			return
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
+			_finish_drag()
+			accept_event()
+			return
 	if GameState.state != "PLAYING":
 		return
 	if event is InputEventScreenTouch:
@@ -148,6 +163,20 @@ func _finish_drag() -> void:
 		return
 	_active = false
 	released.emit(_last_direction, _last_magnitude)
+	_reset_knob()
+
+func _cancel_drag() -> void:
+	if not _active and _knob_offset == Vector2.ZERO:
+		return
+	var was_active: bool = _active
+	var dir: Vector2 = _last_direction
+	var mag: float = _last_magnitude
+	_active = false
+	_reset_knob()
+	if was_active:
+		released.emit(dir, mag)
+
+func _reset_knob() -> void:
 	_knob_offset = Vector2.ZERO
 	_last_direction = Vector2.ZERO
 	_last_magnitude = 0.0

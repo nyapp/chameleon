@@ -12,6 +12,62 @@ var level_up_banner_time: float = 0.0
 var chameleon_ref: Node2D = null   # Chameleonノードへの参照（カーソル描画用）
 var is_dpad_aiming: bool = false
 var is_stick_aiming: bool = false
+var confirming_high_score_reset: bool = false
+
+const CONFIRM_PANEL_LEFT: float = 24.0
+const CONFIRM_PANEL_TOP: float = 68.0
+const CONFIRM_PANEL_WIDTH: float = 208.0
+const CONFIRM_PANEL_HEIGHT: float = 88.0
+const CONFIRM_MESSAGE_Y: float = 92.0
+const CONFIRM_SUBMESSAGE_Y: float = 106.0
+const CONFIRM_BUTTON_TOP: float = 118.0
+const CONFIRM_BUTTON_WIDTH: float = 72.0
+const CONFIRM_BUTTON_HEIGHT: float = 20.0
+const CONFIRM_BUTTON_GAP: float = 16.0
+const CONFIRM_PANEL_RADIUS: float = 10.0
+const CONFIRM_ROW_RADIUS: float = 6.0
+
+const COLOR_CONFIRM_PANEL_BG := Color(0.08, 0.08, 0.08, 0.92)
+const COLOR_CONFIRM_PANEL_BORDER := Color(0.45, 0.45, 0.45, 0.7)
+const COLOR_CONFIRM_ROW_BG := Color(0.12, 0.12, 0.12, 0.92)
+const COLOR_CONFIRM_ROW_BORDER := Color(0.55, 0.55, 0.55, 0.65)
+const COLOR_CONFIRM_TEXT := Color(0.75, 0.75, 0.75)
+
+func _ready() -> void:
+	GameState.state_changed.connect(_on_state_changed)
+
+func _on_state_changed(new_state: String) -> void:
+	if new_state != "TITLE" and confirming_high_score_reset:
+		close_high_score_reset_confirm()
+
+func open_high_score_reset_confirm() -> void:
+	if GameState.state != "TITLE" or confirming_high_score_reset:
+		return
+	confirming_high_score_reset = true
+	queue_redraw()
+
+func close_high_score_reset_confirm() -> void:
+	if not confirming_high_score_reset:
+		return
+	confirming_high_score_reset = false
+	queue_redraw()
+
+func confirm_high_score_reset() -> void:
+	if not confirming_high_score_reset:
+		return
+	GameState.reset_high_score()
+	close_high_score_reset_confirm()
+
+func handle_high_score_reset_confirm_tap(local_pos: Vector2) -> bool:
+	if not confirming_high_score_reset:
+		return false
+	if _high_score_reset_yes_rect().has_point(local_pos):
+		confirm_high_score_reset()
+		return true
+	if _high_score_reset_no_rect().has_point(local_pos):
+		close_high_score_reset_confirm()
+		return true
+	return true
 
 func _game_font() -> Font:
 	return CabinetFonts.arcade_or_fallback()
@@ -62,10 +118,71 @@ func _draw_title_screen() -> void:
 		Vector2(0, 144),
 		"TO START PLAYING", HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 8, flash_color)
 
+	if Time.get_ticks_msec() < GameState.high_score_reset_notice_until_msec:
+		draw_string(font,
+			Vector2(0, 158),
+			"HI-SCORE RESET", HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 7,
+			Color(0.0, 0.941, 1.0))
+
 	draw_string(font,
 		Vector2(0, 225),
 		"© 2026 AXION COGNITIONS", HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 5,
 		Color(0.502, 0.502, 0.627))
+
+	if confirming_high_score_reset:
+		_draw_high_score_reset_confirm(font)
+
+func _high_score_reset_yes_rect() -> Rect2:
+	var total_w := CONFIRM_BUTTON_WIDTH * 2.0 + CONFIRM_BUTTON_GAP
+	var left := (float(CANVAS_W) - total_w) * 0.5
+	return Rect2(left, CONFIRM_BUTTON_TOP, CONFIRM_BUTTON_WIDTH, CONFIRM_BUTTON_HEIGHT)
+
+func _high_score_reset_no_rect() -> Rect2:
+	var yes := _high_score_reset_yes_rect()
+	return Rect2(
+		yes.position.x + CONFIRM_BUTTON_WIDTH + CONFIRM_BUTTON_GAP,
+		yes.position.y,
+		CONFIRM_BUTTON_WIDTH,
+		CONFIRM_BUTTON_HEIGHT
+	)
+
+func _draw_high_score_reset_confirm(font: Font) -> void:
+	draw_rect(Rect2(0, 0, CANVAS_W, CANVAS_H), Color(0, 0, 0, 0.35))
+
+	var panel := Rect2(CONFIRM_PANEL_LEFT, CONFIRM_PANEL_TOP, CONFIRM_PANEL_WIDTH, CONFIRM_PANEL_HEIGHT)
+	_draw_rounded_rect(panel, COLOR_CONFIRM_PANEL_BG, CONFIRM_PANEL_RADIUS, true)
+	_draw_rounded_rect(panel, COLOR_CONFIRM_PANEL_BORDER, CONFIRM_PANEL_RADIUS, false, 2.5)
+
+	draw_string(font,
+		Vector2(0, CONFIRM_MESSAGE_Y),
+		"RESET HI-SCORE?", HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 7,
+		COLOR_CONFIRM_TEXT)
+	draw_string(font,
+		Vector2(0, CONFIRM_SUBMESSAGE_Y),
+		"ARE YOU SURE?", HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, 7,
+		COLOR_CONFIRM_TEXT)
+
+	_draw_confirm_action_button(font, _high_score_reset_yes_rect(), "YES")
+	_draw_confirm_action_button(font, _high_score_reset_no_rect(), "NO")
+
+func _draw_confirm_action_button(font: Font, rect: Rect2, label: String) -> void:
+	_draw_rounded_rect(rect, COLOR_CONFIRM_ROW_BG, CONFIRM_ROW_RADIUS, true)
+	_draw_rounded_rect(rect, COLOR_CONFIRM_ROW_BORDER, CONFIRM_ROW_RADIUS, false, 1.0)
+	draw_string(font,
+		Vector2(rect.position.x, rect.position.y + rect.size.y - 5.0),
+		label, HORIZONTAL_ALIGNMENT_CENTER, int(rect.size.x), 7,
+		COLOR_CONFIRM_TEXT)
+
+func _draw_rounded_rect(rect: Rect2, color: Color, radius: float, filled: bool, line_width: float = 1.0) -> void:
+	var style := StyleBoxFlat.new()
+	style.set_corner_radius_all(maxi(int(radius), 0))
+	if filled:
+		style.bg_color = color
+	else:
+		style.bg_color = Color.TRANSPARENT
+		style.border_color = color
+		style.set_border_width_all(maxi(int(line_width), 1))
+	style.draw(get_canvas_item(), rect)
 
 func _draw_game_over_screen(gs: Node) -> void:
 	var font := _game_font()
@@ -108,10 +225,10 @@ func _draw_game_over_screen(gs: Node) -> void:
 
 	if gs.score >= gs.high_score and gs.score > 0:
 		var hs_baseline: float = content_bottom + NEW_HIGHSCORE_GAP + font.get_ascent(NEW_HIGHSCORE_SIZE)
-		draw_string(font,
+		_draw_rainbow_glow_text(font,
 			Vector2(0, hs_baseline),
-			"NEW HIGH SCORE!", HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, NEW_HIGHSCORE_SIZE,
-			Color(1.0, 0.918, 0.0))
+			"NEW HIGH SCORE!",
+			HORIZONTAL_ALIGNMENT_CENTER, CANVAS_W, NEW_HIGHSCORE_SIZE)
 		content_bottom = hs_baseline + font.get_descent(NEW_HIGHSCORE_SIZE)
 
 	var flash: bool = int(Time.get_ticks_msec() / 400) % 2 == 0
@@ -261,3 +378,45 @@ func _centered_text_baseline(font: Font, text: String, font_size: int, area_top:
 	# Press Start 2P は上側に余白が多いので、見た目の中央に寄せる微調整を入れる。
 	const VISUAL_BIAS_Y: float = 3.0
 	return area_top + (area_h - text_size.y) * 0.5 + text_size.y - descent + VISUAL_BIAS_Y
+
+func _rainbow_hue(time_sec: float, offset: float = 0.0) -> float:
+	return fmod(time_sec * 0.42 + offset, 1.0)
+
+func _draw_rainbow_glow_text(
+	font: Font,
+	pos: Vector2,
+	text: String,
+	h_align: HorizontalAlignment,
+	width: int,
+	font_size: int
+) -> void:
+	var time_sec := Time.get_ticks_msec() * 0.001
+	var pulse := 0.68 + 0.32 * sin(time_sec * 5.0)
+	const GLOW_SPREADS := [4.0, 2.5, 1.0]
+
+	for i in GLOW_SPREADS.size():
+		var spread: float = GLOW_SPREADS[i]
+		var glow_alpha: float = pulse * (0.24 - float(i) * 0.06)
+		var glow_col := Color.from_hsv(_rainbow_hue(time_sec, float(i) * 0.14), 0.88, 1.0, glow_alpha)
+		for ox in [-spread, spread]:
+			draw_string(font, pos + Vector2(ox, 0.0), text, h_align, width, font_size, glow_col)
+			draw_string(font, pos + Vector2(ox * 0.5, spread * 0.35), text, h_align, width, font_size, glow_col)
+		draw_string(font, pos + Vector2(0.0, -spread * 0.25), text, h_align, width, font_size, glow_col)
+
+	_draw_rainbow_text_per_char(font, pos, text, width, font_size, time_sec)
+
+func _draw_rainbow_text_per_char(
+	font: Font,
+	pos: Vector2,
+	text: String,
+	width: int,
+	font_size: int,
+	time_sec: float
+) -> void:
+	var text_w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	var x := (float(width) - text_w) * 0.5
+	for i in text.length():
+		var ch := text.substr(i, 1)
+		var col := Color.from_hsv(_rainbow_hue(time_sec, float(i) * 0.07), 0.95, 1.0)
+		draw_string(font, Vector2(x, pos.y), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, col)
+		x += font.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x

@@ -45,6 +45,7 @@ signal power_up_deactivated()
 signal game_over_triggered()
 signal level_up(new_level: int)
 signal combo_updated(new_combo: int)
+signal high_score_reset()
 
 # ─── 初期化 ─────────────────────────────────────────────────
 func scale60(delta: float) -> float:
@@ -177,6 +178,9 @@ func add_score(base_value: int) -> int:
 
 # ─── HighScore 永続化（JSの localStorage 相当） ──────────────
 const SAVE_PATH: String = "user://neo_chameleon_save.cfg"
+const HIGH_SCORE_RESET_NOTICE_MS: int = 2000
+
+var high_score_reset_notice_until_msec: int = -1
 
 func save_high_score() -> void:
 	var config := ConfigFile.new()
@@ -189,6 +193,12 @@ func load_high_score() -> void:
 		high_score = config.get_value("score", "high_score", 0)
 	else:
 		high_score = 0
+
+func reset_high_score() -> void:
+	high_score = 0
+	save_high_score()
+	high_score_reset_notice_until_msec = Time.get_ticks_msec() + HIGH_SCORE_RESET_NOTICE_MS
+	high_score_reset.emit()
 
 # ─── エネルギー更新 ──────────────────────────────────────────
 func tick_energy(delta: float) -> bool:

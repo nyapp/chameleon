@@ -39,8 +39,8 @@ func _draw_score_bar(gs: Node) -> void:
 		HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE, Color.WHITE)
 
 	var hi_str: String = "HI-SCORE:%s" % str(gs.high_score).lpad(6, "0")
-	draw_string(font, Vector2(CANVAS_W - MARGIN_X, BASELINE_Y), hi_str,
-		HORIZONTAL_ALIGNMENT_RIGHT, -1, FONT_SIZE, Color.WHITE)
+	draw_string(font, Vector2(0, BASELINE_Y), hi_str,
+		HORIZONTAL_ALIGNMENT_RIGHT, CANVAS_W - MARGIN_X, FONT_SIZE, Color.WHITE)
 
 func _draw_level(gs: Node) -> void:
 	var font := _game_font()
