@@ -18,4 +18,6 @@ yarn-error.log*
 # These are intentionally committed: project.godot, scenes/, scripts/, shaders/, export_presets.cfg
 
 # iOS / Godot export build output (regenerated via Export)
-build/
+build/*
+!build/ci_scripts/
+!build/ci_scripts/**
