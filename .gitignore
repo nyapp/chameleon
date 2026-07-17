@@ -9,6 +9,11 @@ yarn-error.log*
 # OS files
 .DS_Store
 
+# Python / SCons
+__pycache__/
+*.pyc
+.sconsign.dblite
+
 # Godot Engine auto-generated files
 .godot/
 .godot/export_credentials.cfg
@@ -22,5 +27,6 @@ build/*
 !build/ci_scripts/
 !build/ci_scripts/**
 
-# iOS plugin intermediate build products (final xcframework lives in ios/plugins/)
+# iOS plugin build intermediates (final binaries live in ios/plugins/)
 ios/plugin_src/**/bin/
+ios/plugin_src/**/*.o
