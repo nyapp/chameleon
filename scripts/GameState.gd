@@ -98,11 +98,13 @@ func return_to_title() -> void:
 	set_state("TITLE")
 
 func trigger_game_over() -> void:
-	if score > high_score:
+	var is_new_high_score: bool = score > high_score
+	if is_new_high_score:
 		high_score = score
 		save_high_score()
 	set_state("GAMEOVER")
 	game_over_triggered.emit()
+	ReviewGate.maybe_request(is_new_high_score)
 
 # ─── コンボ処理 ──────────────────────────────────────────────
 func increment_combo() -> void:
@@ -184,6 +186,7 @@ var high_score_reset_notice_until_msec: int = -1
 
 func save_high_score() -> void:
 	var config := ConfigFile.new()
+	config.load(SAVE_PATH)
 	config.set_value("score", "high_score", high_score)
 	config.save(SAVE_PATH)
 

@@ -1,0 +1,103 @@
+#!/usr/bin/env python
+import os
+import subprocess
+import sys
+
+if sys.version_info < (3,):
+	def decode_utf8(x):
+		return x
+else:
+	import codecs
+	def decode_utf8(x):
+		return codecs.utf_8_decode(x)[0]
+
+opts = Variables([], ARGUMENTS)
+env = DefaultEnvironment()
+
+opts.Add(EnumVariable("target", "Compilation target", "debug", ["debug", "release", "release_debug"]))
+opts.Add(EnumVariable("arch", "Compilation Architecture", "", ["", "arm64", "x86_64"]))
+opts.Add(BoolVariable("simulator", "Compilation platform", "no"))
+opts.Add(PathVariable("target_path", "The path where the lib is installed.", "bin/"))
+opts.Add(EnumVariable("plugin", "Plugin to build", "appreview", ["appreview"]))
+opts.Add(EnumVariable("version", "Godot version to target", "4.0", ["4.0"]))
+opts.Add(PathVariable("godot_path", "Path to Godot source", "../godot", PathVariable.PathAccept))
+
+opts.Update(env)
+
+if env["arch"] == "":
+	print("No valid arch selected.")
+	quit()
+
+sdk_name = "iphonesimulator" if env["simulator"] else "iphoneos"
+min_flag = "-mios-simulator-version-min=16.0" if env["simulator"] else "-miphoneos-version-min=16.0"
+env.Append(CCFLAGS=[min_flag])
+env.Append(LINKFLAGS=[min_flag])
+
+try:
+	sdk_path = decode_utf8(subprocess.check_output(["xcrun", "--sdk", sdk_name, "--show-sdk-path"]).strip())
+except (subprocess.CalledProcessError, OSError):
+	raise ValueError("Failed to find SDK path while running xcrun --sdk {} --show-sdk-path.".format(sdk_name))
+
+env.Append(CCFLAGS=["-fmodules", "-fcxx-modules"])
+env.Append(CCFLAGS=[
+	"-fobjc-arc",
+	"-fmessage-length=0",
+	"-fno-strict-aliasing",
+	"-fpascal-strings",
+	"-fblocks",
+	"-fvisibility=hidden",
+	"-fno-exceptions",
+	"-Wno-ambiguous-macro",
+	"-Wall",
+	"-Werror=return-type",
+])
+env.Append(CCFLAGS=["-arch", env["arch"], "-stdlib=libc++", "-isysroot", sdk_path])
+env.Append(CCFLAGS=["-DPTRCALL_ENABLED"])
+env.Prepend(CXXFLAGS=[
+	"-DNEED_LONG_INT",
+	"-DLIBYUV_DISABLE_NEON",
+	"-DIOS_ENABLED",
+	"-DUNIX_ENABLED",
+	"-DCOREAUDIO_ENABLED",
+	"-DVERSION_4_0",
+	"-DVULKAN_ENABLED",
+	"-std=gnu++17",
+])
+env.Prepend(CFLAGS=["-std=gnu11"])
+env.Append(LINKFLAGS=["-arch", env["arch"], "-isysroot", sdk_path, "-F" + sdk_path])
+
+if env["target"] == "debug":
+	env.Prepend(CXXFLAGS=[
+		"-gdwarf-2", "-O0",
+		"-DDEBUG_MEMORY_ALLOC", "-DDISABLE_FORCED_INLINE",
+		"-D_DEBUG", "-DDEBUG=1", "-DDEBUG_ENABLED",
+	])
+elif env["target"] == "release_debug":
+	env.Prepend(CXXFLAGS=[
+		"-O2", "-ftree-vectorize", "-fomit-frame-pointer",
+		"-DNDEBUG", "-DNS_BLOCK_ASSERTIONS=1", "-DDEBUG_ENABLED",
+	])
+else:
+	env.Prepend(CXXFLAGS=[
+		"-O2", "-ftree-vectorize", "-fomit-frame-pointer",
+		"-DNDEBUG", "-DNS_BLOCK_ASSERTIONS=1",
+	])
+
+godot_path = env["godot_path"]
+env.Append(CPPPATH=[
+	".",
+	godot_path,
+	os.path.join(godot_path, "platform/ios"),
+])
+
+# Godot iOS plugins expect bare names like plugin.arch-ios.target.a (no lib prefix).
+env["LIBPREFIX"] = ""
+
+sources = Glob("plugin/" + env["plugin"] + "/*.mm")
+
+library_platform = env["arch"] + "-" + ("simulator" if env["simulator"] else "ios")
+library_name = env["plugin"] + "." + library_platform + "." + env["target"] + ".a"
+library = env.StaticLibrary(target=env["target_path"] + library_name, source=sources)
+
+Default(library)
+Help(opts.GenerateHelpText(env))

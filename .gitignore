@@ -21,3 +21,6 @@ yarn-error.log*
 build/*
 !build/ci_scripts/
 !build/ci_scripts/**
+
+# iOS plugin intermediate build products (final xcframework lives in ios/plugins/)
+ios/plugin_src/**/bin/

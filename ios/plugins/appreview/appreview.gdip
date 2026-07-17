@@ -1,0 +1,19 @@
+[config]
+name="AppReview"
+binary="appreview.xcframework"
+
+initialization="register_appreview_types"
+deinitialization="unregister_appreview_types"
+
+[dependencies]
+linked=[]
+embedded=[]
+system=["StoreKit.framework", "UIKit.framework"]
+
+capabilities=[]
+
+files=[]
+
+linker_flags=["-ObjC"]
+
+[plist]
