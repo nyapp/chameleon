@@ -64,4 +64,16 @@ if [ ! -d "$EXPORT_PATH" ]; then
 	exit 1
 fi
 
+# Godot exports empty privacy usage keys; App Store Connect rejects those.
+INFO_PLIST="$WORKSPACE_DIR/build/NeoChameleon/NeoChameleon-Info.plist"
+if [ -f "$INFO_PLIST" ]; then
+	for key in NSCameraUsageDescription NSMicrophoneUsageDescription NSPhotoLibraryUsageDescription; do
+		val="$(/usr/libexec/PlistBuddy -c "Print :$key" "$INFO_PLIST" 2>/dev/null || true)"
+		if [ -z "$val" ]; then
+			/usr/libexec/PlistBuddy -c "Delete :$key" "$INFO_PLIST" 2>/dev/null || true
+			echo "Removed empty $key from Info.plist"
+		fi
+	done
+fi
+
 echo "Generated $EXPORT_PATH for Xcode Cloud"
