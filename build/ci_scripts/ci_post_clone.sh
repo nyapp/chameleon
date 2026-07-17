@@ -64,9 +64,11 @@ if [ ! -d "$EXPORT_PATH" ]; then
 	exit 1
 fi
 
-# Godot exports empty privacy usage keys; App Store Connect rejects those.
 INFO_PLIST="$WORKSPACE_DIR/build/NeoChameleon/NeoChameleon-Info.plist"
+PBXPROJ="$EXPORT_PATH/project.pbxproj"
+
 if [ -f "$INFO_PLIST" ]; then
+	# Empty privacy usage keys → App Store Connect prepare fails.
 	for key in NSCameraUsageDescription NSMicrophoneUsageDescription NSPhotoLibraryUsageDescription; do
 		val="$(/usr/libexec/PlistBuddy -c "Print :$key" "$INFO_PLIST" 2>/dev/null || true)"
 		if [ -z "$val" ]; then
@@ -74,6 +76,18 @@ if [ -f "$INFO_PLIST" ]; then
 			echo "Removed empty $key from Info.plist"
 		fi
 	done
+
+	# Empty CFBundleIcons can block Asset Catalog icons during ASC validation.
+	for key in CFBundleIcons "CFBundleIcons~ipad"; do
+		/usr/libexec/PlistBuddy -c "Delete :$key" "$INFO_PLIST" 2>/dev/null || true
+	done
+fi
+
+# Avoid CFBundleVersion collisions with previous TestFlight / ASC uploads.
+if [ -f "$PBXPROJ" ] && [ -n "${CI_BUILD_NUMBER:-}" ]; then
+	sed -i.bak "s/CURRENT_PROJECT_VERSION = [^;]*/CURRENT_PROJECT_VERSION = ${CI_BUILD_NUMBER}/g" "$PBXPROJ"
+	rm -f "${PBXPROJ}.bak"
+	echo "Set CURRENT_PROJECT_VERSION=${CI_BUILD_NUMBER}"
 fi
 
 echo "Generated $EXPORT_PATH for Xcode Cloud"
