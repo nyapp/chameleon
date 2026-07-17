@@ -17,36 +17,67 @@ func maybe_request(is_new_high_score: bool) -> void:
 	var count: int = _load_game_over_count() + 1
 	_save_game_over_count(count)
 
-	if count < MIN_GAME_OVER_COUNT or not is_new_high_score:
+	var debug_relaxed: bool = OS.is_debug_build()
+	var min_count: int = 1 if debug_relaxed else MIN_GAME_OVER_COUNT
+
+	print("[ReviewGate] game_over#=%d high_score=%s debug=%s plugin=%s" % [
+		count, is_new_high_score, debug_relaxed, _ensure_plugin()
+	])
+
+	if count < min_count:
+		print("[ReviewGate] skip: need %d game overs" % min_count)
+		return
+	if not is_new_high_score:
+		print("[ReviewGate] skip: not a new high score")
 		return
 	if OS.get_name() != "iOS":
+		print("[ReviewGate] skip: OS=%s" % OS.get_name())
 		return
 	if not _ensure_plugin():
+		print("[ReviewGate] skip: AppReview singleton missing")
 		return
 
 	var app_version: String = _plugin_app_version()
-	if _load_last_requested_version() == app_version:
+	if not debug_relaxed and _load_last_requested_version() == app_version:
+		print("[ReviewGate] skip: already requested for version %s" % app_version)
 		return
 
 	var last_at: int = _load_last_requested_at()
-	if last_at > 0 and (Time.get_unix_time_from_system() - last_at) < COOLDOWN_SEC:
+	if not debug_relaxed and last_at > 0 and (Time.get_unix_time_from_system() - last_at) < COOLDOWN_SEC:
+		print("[ReviewGate] skip: cooldown active")
 		return
 
 	if _request_queued:
+		print("[ReviewGate] skip: already queued")
 		return
 	_request_queued = true
 
-	# 記録は「呼んだ時点」。ダイアログ表示の有無は検知できない（Apple仕様）
-	_save_last_requested_version(app_version)
-	_save_last_requested_at(int(Time.get_unix_time_from_system()))
+	# 本番のみ「呼んだ時点」で記録。Debug は何度でも試せる
+	if not debug_relaxed:
+		_save_last_requested_version(app_version)
+		_save_last_requested_at(int(Time.get_unix_time_from_system()))
 
+	print("[ReviewGate] requesting review in %.1fs (version=%s)" % [REQUEST_DELAY_SEC, app_version])
 	await get_tree().create_timer(REQUEST_DELAY_SEC).timeout
 	if _ensure_plugin():
 		_plugin.request_review()
+		print("[ReviewGate] request_review() called")
+	else:
+		print("[ReviewGate] plugin lost before request")
 	_request_queued = false
 
 func is_plugin_available() -> bool:
 	return _ensure_plugin()
+
+## テスト用: レビュー依頼の永続状態を消す（アプリ削除と同じ）
+func reset_review_state() -> void:
+	var config := ConfigFile.new()
+	config.load(SAVE_PATH)
+	config.set_value("review", "game_over_count", 0)
+	config.set_value("review", "last_requested_version", "")
+	config.set_value("review", "last_requested_at", 0)
+	config.save(SAVE_PATH)
+	print("[ReviewGate] review state reset")
 
 func _ensure_plugin() -> bool:
 	if not _plugin_checked:
